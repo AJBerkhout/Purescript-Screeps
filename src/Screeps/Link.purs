@@ -18,10 +18,10 @@ energy = unsafeField "energy"
 energyCapacity :: Link -> Int
 energyCapacity = unsafeField "energyCapacity"
 
-transferEnergy :: forall e. Link -> Link -> Effect ReturnCode
+transferEnergy :: Link -> Link -> Effect ReturnCode
 transferEnergy = runThisEffFn1 "transferEnergy"
 
-transferEnergyAmt :: forall e. Link -> Link -> Int -> Effect ReturnCode
+transferEnergyAmt :: Link -> Link -> Int -> Effect ReturnCode
 transferEnergyAmt = runThisEffFn2 "transferEnergy"
 
 toLink :: forall a. Structure a -> Maybe Link

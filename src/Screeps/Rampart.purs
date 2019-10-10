@@ -15,7 +15,7 @@ isPublic = unsafeField "isPublic"
 ticksToDecay :: Rampart -> Int
 ticksToDecay = unsafeField "ticksToDecay"
 
-setPublic :: forall e. Rampart -> Boolean -> Effect ReturnCode
+setPublic :: Rampart -> Boolean -> Effect ReturnCode
 setPublic = unsafeField "setPublic"
 
 toRampart :: forall a. Structure a -> Maybe Rampart

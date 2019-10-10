@@ -21,13 +21,13 @@ id = unsafeField "id"
 structureType :: forall a. Structure a -> StructureType
 structureType = unsafeField "structureType"
 
-destroy :: forall a e. Structure a -> Effect ReturnCode
+destroy :: forall a. Structure a -> Effect ReturnCode
 destroy = runThisEffFn0 "destroy"
 
-isActive :: forall a e. Structure a -> Effect Boolean
+isActive :: forall a. Structure a -> Effect Boolean
 isActive = runThisEffFn0 "isActive"
 
-notifyWhenAttacked :: forall a e. Structure a -> Boolean -> Effect ReturnCode
+notifyWhenAttacked :: forall a. Structure a -> Boolean -> Effect ReturnCode
 notifyWhenAttacked = runThisEffFn1 "notifyWhenAttacked"
 
 unsafeCast :: forall a b. StructureType -> Structure a -> Maybe b

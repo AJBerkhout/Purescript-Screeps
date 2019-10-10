@@ -20,10 +20,10 @@ storeGet s (ResourceType res) = unsafeField res s
 storeCapacity :: Terminal -> Int
 storeCapacity = unsafeField "storeCapacity"
 
-send :: forall e. Terminal -> ResourceType -> Int -> String -> Effect ReturnCode
+send :: Terminal -> ResourceType -> Int -> String -> Effect ReturnCode
 send term res amount destRoomName = runThisEffFn3 "send" term res amount destRoomName
 
-send' :: forall e. Terminal -> ResourceType -> Int -> String -> String -> Effect ReturnCode
+send' :: Terminal -> ResourceType -> Int -> String -> String -> Effect ReturnCode
 send' term res amount destRoomName description = runThisEffFn4 "send" term res amount destRoomName description
 
 toTerminal :: forall a. Structure a -> Maybe Terminal

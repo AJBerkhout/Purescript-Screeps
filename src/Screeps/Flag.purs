@@ -3,7 +3,7 @@ module Screeps.Flag where
 
 import Effect (Effect)
 
-import Screeps.Types (Color, Flag, ReturnCode, RoomPosition, TargetPosition(..))
+import Screeps.Types (Color, Flag, ReturnCode, TargetPosition(..))
 import Screeps.FFI (runThisEffFn0, runThisEffFn1, runThisEffFn2, unsafeField)
 
 color :: Flag -> Color
@@ -18,16 +18,16 @@ name = unsafeField "name"
 secondaryColor :: Flag -> Color
 secondaryColor = unsafeField "secondaryColor"
 
-remove :: forall e. Flag -> Effect ReturnCode
+remove :: Flag -> Effect ReturnCode
 remove = runThisEffFn0 "remove"
 
-setColor :: forall e. Flag -> Color -> Effect ReturnCode
+setColor :: Flag -> Color -> Effect ReturnCode
 setColor = runThisEffFn1 "setColor"
 
-setColors :: forall e. Flag -> Color -> Color -> Effect ReturnCode
+setColors :: Flag -> Color -> Color -> Effect ReturnCode
 setColors = runThisEffFn2 "setColor"
 
-setPosition :: forall a e. Flag -> TargetPosition a -> Effect ReturnCode
+setPosition :: forall a. Flag -> TargetPosition a -> Effect ReturnCode
 setPosition flag (TargetPt x y) = runThisEffFn2 "setPosition" flag x y
 setPosition flag (TargetObj obj) = runThisEffFn1 "setPosition" flag obj
 setPosition flag (TargetPos pos) = runThisEffFn1 "setPosition" flag pos

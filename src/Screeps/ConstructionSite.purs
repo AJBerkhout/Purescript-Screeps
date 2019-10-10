@@ -24,5 +24,5 @@ progressTotal = unsafeField "progressTotal"
 structureType :: ConstructionSite -> StructureType
 structureType = unsafeField "structureType"
 
-remove :: forall e. ConstructionSite -> Effect ReturnCode
+remove :: ConstructionSite -> Effect ReturnCode
 remove = runThisEffFn0 "remove"

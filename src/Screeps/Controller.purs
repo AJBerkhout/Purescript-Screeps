@@ -27,7 +27,7 @@ ticksToDowngrade = unsafeField "ticksToDowngrade"
 upgradeBlocked :: Controller -> Int
 upgradeBlocked = unsafeField "upgradeBlocked"
 
-unclaim :: forall e. Controller -> Effect ReturnCode
+unclaim :: Controller -> Effect ReturnCode
 unclaim = runThisEffFn0 "unclaim"
 
 toController :: forall a. Structure a -> Maybe Controller

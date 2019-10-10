@@ -24,7 +24,7 @@ ghodiumCapacity = unsafeField "ghodiumCapacity"
 cooldown :: Nuker -> Int
 cooldown = unsafeField "cooldown"
 
-launchNuke :: forall e. Nuker -> RoomPosition -> Effect ReturnCode
+launchNuke :: Nuker -> RoomPosition -> Effect ReturnCode
 launchNuke = runThisEffFn1 "launchNuke"
 
 toNuker :: forall a. Structure a -> Maybe Nuker

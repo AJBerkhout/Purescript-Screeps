@@ -2,7 +2,7 @@ module Screeps.Constants where
 
 import Prelude
 
-import Screeps.Types
+import Screeps.Types (BodyPartType, Color, ConstructionSite, Creep, Direction, FindType, Flag, LookType, Mineral, Mode, Nuke, Resource, ResourceType, ReturnCode, RoomPosition, Source, Spawn, Structure, StructureInfo, StructureType, Terrain, TerrainMask)
 
 foreign import ok :: ReturnCode
 foreign import err_not_owner :: ReturnCode

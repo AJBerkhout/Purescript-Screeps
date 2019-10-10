@@ -35,16 +35,16 @@ spawning spawn = toMaybe $ unsafeField "spawning" spawn
 canCreateCreep :: Spawn -> Array BodyPartType -> ReturnCode
 canCreateCreep spawn parts = runThisFn1 "canCreateCreep" spawn parts
 
-canCreateCreep' :: forall e. Spawn -> Array BodyPartType -> String -> Effect ReturnCode
+canCreateCreep' :: Spawn -> Array BodyPartType -> String -> Effect ReturnCode
 canCreateCreep' spawn parts name' = runThisEffFn2 "canCreateCreep" spawn parts name'
 
-foreign import createCreepImpl :: forall e.
+foreign import createCreepImpl :: 
   Spawn ->
   Array BodyPartType ->
   (ReturnCode -> Either ReturnCode String) ->
   (String -> Either ReturnCode String) ->
   Effect (Either ReturnCode String)
-foreign import createCreepPrimeImpl :: forall e mem.
+foreign import createCreepPrimeImpl :: forall mem.
   Spawn ->
   Array BodyPartType ->
   NullOrUndefined String ->
@@ -53,16 +53,16 @@ foreign import createCreepPrimeImpl :: forall e mem.
   (String -> Either ReturnCode String) ->
   Effect (Either ReturnCode String)
 
-createCreep :: forall e. Spawn -> Array BodyPartType -> Effect (Either ReturnCode String)
+createCreep :: Spawn -> Array BodyPartType -> Effect (Either ReturnCode String)
 createCreep spawn parts = createCreepImpl spawn parts Left Right
 
-createCreep' :: forall mem e. (EncodeJson mem) => Spawn -> Array BodyPartType -> Maybe String -> mem -> Effect (Either ReturnCode String)
+createCreep' :: forall mem. (EncodeJson mem) => Spawn -> Array BodyPartType -> Maybe String -> mem -> Effect (Either ReturnCode String)
 createCreep' spawn parts name' mem = createCreepPrimeImpl spawn parts (toNullable name') (encodeJson mem) Left Right
 
-recycleCreep :: forall e. Spawn -> Creep -> Effect ReturnCode
+recycleCreep :: Spawn -> Creep -> Effect ReturnCode
 recycleCreep = runThisEffFn1 "recycleCreep"
 
-renewCreep :: forall e. Spawn -> Creep -> Effect ReturnCode
+renewCreep :: Spawn -> Creep -> Effect ReturnCode
 renewCreep = runThisEffFn1 "renewCreep"
 
 toSpawn :: forall a. Structure a -> Maybe Spawn

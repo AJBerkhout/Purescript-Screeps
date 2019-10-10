@@ -2,13 +2,9 @@
 module Screeps.Types where
 
 import Prelude
-import Data.Argonaut.Decode (class DecodeJson, decodeJson)
-import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Generic.Rep.Eq (genericEq)
-import Data.Maybe (Maybe)
-import Foreign.Object as StrMap
 import Data.Map.Internal (Map)
 
 foreign import data GameGlobal :: Type

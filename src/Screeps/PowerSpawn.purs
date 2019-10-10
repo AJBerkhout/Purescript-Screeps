@@ -21,10 +21,10 @@ power = unsafeField "power"
 powerCapacity :: PowerSpawn -> Int
 powerCapacity = unsafeField "powerCapacity"
 
-createPowerCreep :: forall e. PowerSpawn -> String -> Effect ReturnCode
+createPowerCreep :: PowerSpawn -> String -> Effect ReturnCode
 createPowerCreep spawn name = runThisEffFn1 "createPowerCreep" spawn name
 
-processPower :: forall e. PowerSpawn -> Effect ReturnCode
+processPower :: PowerSpawn -> Effect ReturnCode
 processPower = runThisEffFn0 "processPower"
 
 toPowerSpawn :: forall a. Structure a -> Maybe PowerSpawn

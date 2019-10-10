@@ -27,13 +27,13 @@ mineralType = unsafeField "mineralType"
 mineralCapacity :: Lab -> Int
 mineralCapacity = unsafeField "mineralCapacity"
 
-boostCreep :: forall e. Lab -> Creep -> Effect ReturnCode
+boostCreep :: Lab -> Creep -> Effect ReturnCode
 boostCreep = runThisEffFn1 "boostCreep"
 
-boostCreep' :: forall e. Lab -> Creep -> Int -> Effect ReturnCode
+boostCreep' :: Lab -> Creep -> Int -> Effect ReturnCode
 boostCreep' lab creep bodyPartsCount = runThisEffFn2 "boostCreep" lab creep bodyPartsCount
 
-runReaction :: forall e. Lab -> Lab -> Lab -> Effect ReturnCode
+runReaction :: Lab -> Lab -> Lab -> Effect ReturnCode
 runReaction lab lab1 lab2 = runThisEffFn2 "runReaction" lab lab1 lab2
 
 toLab :: forall a. Structure a -> Maybe Lab

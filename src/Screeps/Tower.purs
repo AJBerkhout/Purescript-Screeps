@@ -15,19 +15,19 @@ energy = unsafeField "energy"
 energyCapacity :: Tower -> Int
 energyCapacity = unsafeField "energyCapacity"
 
-attack :: forall e. Tower -> Creep -> Effect ReturnCode
+attack :: Tower -> Creep -> Effect ReturnCode
 attack = runThisEffFn1 "attack"
 
-heal :: forall e. Tower -> Creep -> Effect ReturnCode
+heal :: Tower -> Creep -> Effect ReturnCode
 heal = runThisEffFn1 "heal"
 
-repair :: forall a e. Tower -> Structure a -> Effect ReturnCode
+repair :: forall a. Tower -> Structure a -> Effect ReturnCode
 repair = runThisEffFn1 "repair"
 
-transferEnergy :: forall e. Tower -> Creep -> Effect ReturnCode
+transferEnergy :: Tower -> Creep -> Effect ReturnCode
 transferEnergy = runThisEffFn1 "transferEnergy"
 
-transferEnergyAmt :: forall e. Tower -> Creep -> Int -> Effect ReturnCode
+transferEnergyAmt :: Tower -> Creep -> Int -> Effect ReturnCode
 transferEnergyAmt = runThisEffFn2 "transferEnergy"
 
 toTower :: forall a. Structure a -> Maybe Tower
