@@ -11,14 +11,17 @@ import Data.Traversable (for)
 import Effect (Effect)
 import Effect.Class.Console (logShow)
 import Effect.Console (log)
-import Foreign.Object (isEmpty)
 import Role.Builder (runBuilder)
 import Role.Harvester (runHarvester)
 import Role.Upgrader (runUpgrader)
-import Screeps.Constants (ok, part_carry, part_move, part_work)
+import Screeps.Constants (find_my_structures, ok, part_carry, part_move, part_work)
+import Screeps.Defense (runTower)
 import Screeps.Game (creeps, getGameGlobal, spawns)
+import Screeps.Room (find')
+import Screeps.RoomObject (room)
 import Screeps.Spawn (canCreateCreep)
-import Screeps.Types (Creep, Spawn)
+import Screeps.Tower (toTower)
+import Screeps.Types (Creep, Spawn, Structure)
 
 ignore :: forall a. a -> Unit
 ignore _ = unit
@@ -74,20 +77,19 @@ spawnNewCreeps spawn =
           [part_move, part_work, part_work, part_carry] noName 
           (UpgraderMemory {role: UpgraderRole, working: true})
         >>= logShow
-            
+   
+isTower :: forall a. Structure a -> Boolean
+isTower struct =
+  case toTower struct of
+    Nothing-> false
+    Just s -> true
 
 loop :: Effect Unit
 loop = do
   game <- getGameGlobal
-  if (isEmpty (creeps game)) then
-    for_ (spawns game) \spawn ->
-      spawnCreep spawn 
-        [part_move, part_move, part_work, part_carry] noName 
-        (HarvesterMemory {role: HarvesterRole})
-  else  
-    pure unit
-
   for_ (spawns game) \spawn -> do
+    let towers = find' (room spawn) find_my_structures isTower
+    for_ (towers) \n -> do runTower n
     if canCreateCreep spawn [part_move, part_work, part_work, part_carry] == ok
     then spawnNewCreeps spawn
     else pure unit

@@ -6,12 +6,13 @@ import CreepRoles (Upgrader)
 import Data.Array (head)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Screeps (err_not_in_range, find_sources, resource_energy)
-import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, setMemory, upgradeController)
+import Screeps (err_not_in_range, find_my_structures, find_sources, resource_energy)
+import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, setMemory, transferToStructure, upgradeController)
 import Screeps.Game (getGameGlobal)
-import Screeps.Room (find, controller)
+import Screeps.Room (controller, find, find')
 import Screeps.RoomObject (room)
-import Screeps.Types (ResourceType(..), TargetPosition(..))
+import Screeps.Tower (energy, toTower)
+import Screeps.Types (ResourceType(..), Structure, TargetPosition(..))
 
 ignore :: forall a. a -> Unit
 ignore _ = unit
@@ -19,8 +20,16 @@ ignore _ = unit
 ignoreM :: forall m a. Monad m => m a -> m Unit
 ignoreM m = m <#> ignore 
 
+isEmptyTower :: forall a. Structure a -> Boolean
+isEmptyTower struct =
+  case toTower struct of
+    Nothing-> false
+    Just t -> 
+      energy t == 0
+
 runUpgrader :: Upgrader  -> Effect Unit
 runUpgrader { creep, mem: { working } } = do
+  let emptyTowers = find' (room creep) find_my_structures isEmptyTower
   case working of
     false ->
       if amtCarrying creep resource_energy < (carryCapacity creep)
@@ -38,15 +47,24 @@ runUpgrader { creep, mem: { working } } = do
     true -> do
       game <- getGameGlobal
       if (amtCarrying creep (ResourceType "energy") > 0) then
-        case (controller (room creep)) of
-          Nothing -> do
-            pure unit
-          Just controller -> do
-            upgradeResult <- upgradeController creep controller
-            if upgradeResult == err_not_in_range
+        case head (emptyTowers) of
+          Just emptyTower -> do
+            transferResult <- transferToStructure creep emptyTower (ResourceType "energy")
+            if transferResult == err_not_in_range
             then do
-              moveTo creep (TargetObj controller) # ignoreM
-            else do 
+              moveTo creep (TargetObj emptyTower) # ignoreM
+            else do
               pure unit
+          Nothing -> 
+            case (controller (room creep)) of
+              Nothing -> do
+                pure unit
+              Just controller -> do
+                upgradeResult <- upgradeController creep controller
+                if upgradeResult == err_not_in_range
+                then do
+                  moveTo creep (TargetObj controller) # ignoreM
+                else do 
+                  pure unit
       else do 
         setMemory creep "working" false
