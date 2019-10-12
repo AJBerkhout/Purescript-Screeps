@@ -4,7 +4,6 @@ import Prelude
 
 import CreepRoles (Upgrader)
 import Data.Array (head)
-import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Screeps (err_not_in_range, find_sources, resource_energy)
@@ -35,7 +34,7 @@ runUpgrader { creep, mem: { working } } = do
             then moveTo creep (TargetObj targetSource) # ignoreM
             else pure unit
       else do 
-        setMemory creep "working" "\"true\""
+        setMemory creep "working" true
     true -> do
       game <- getGameGlobal
       if (amtCarrying creep (ResourceType "energy") > 0) then
@@ -50,4 +49,4 @@ runUpgrader { creep, mem: { working } } = do
             else do 
               pure unit
       else do 
-        setMemory creep "working" "\"false\""
+        setMemory creep "working" false
