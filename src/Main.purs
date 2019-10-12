@@ -2,27 +2,27 @@ module Main (loop) where
 
 import Prelude
 
-import CreepRoles (CreepMemory(..), Role(..), UnknownCreepType(..), VocationalCreep(..), classifyCreep, spawnCreep)
+import CreepRoles (UnknownCreepType(..), VocationalCreep(..), classifyCreep)
 import CreepSpawning (spawnCreepIfNeeded)
-import Data.Array (fromFoldable, length, mapMaybe)
+
 import Data.Either (Either(..))
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
-import Data.Traversable (for)
+
 import Effect (Effect)
-import Effect.Class.Console (logShow)
+
 import Effect.Console (log)
 import Role.Builder (runBuilder)
 import Role.Harvester (runHarvester)
 import Role.Upgrader (runUpgrader)
-import Screeps.Constants (find_my_structures, ok, part_carry, part_move, part_work)
+import Screeps.Constants (find_my_structures)
 import Screeps.Defense (runTower)
 import Screeps.Game (creeps, getGameGlobal, spawns)
 import Screeps.Room (find')
 import Screeps.RoomObject (room)
-import Screeps.Spawn (canCreateCreep)
+
 import Screeps.Tower (toTower)
-import Screeps.Types (Creep, Spawn, Structure)
+import Screeps.Types (Creep, Structure)
 
 ignore :: forall a. a -> Unit
 ignore _ = unit
