@@ -29,7 +29,6 @@ isEmptyTower struct =
 
 runUpgrader :: Upgrader  -> Effect Unit
 runUpgrader { creep, mem: { working } } = do
-  let emptyTowers = find' (room creep) find_my_structures isEmptyTower
   case working of
     false ->
       if amtCarrying creep resource_energy < (carryCapacity creep)
@@ -47,24 +46,15 @@ runUpgrader { creep, mem: { working } } = do
     true -> do
       game <- getGameGlobal
       if (amtCarrying creep (ResourceType "energy") > 0) then
-        case head (emptyTowers) of
-          Just emptyTower -> do
-            transferResult <- transferToStructure creep emptyTower (ResourceType "energy")
-            if transferResult == err_not_in_range
+        case (controller (room creep)) of
+          Nothing -> do
+            pure unit
+          Just controller -> do
+            upgradeResult <- upgradeController creep controller
+            if upgradeResult == err_not_in_range
             then do
-              moveTo creep (TargetObj emptyTower) # ignoreM
-            else do
+              moveTo creep (TargetObj controller) # ignoreM
+            else do 
               pure unit
-          Nothing -> 
-            case (controller (room creep)) of
-              Nothing -> do
-                pure unit
-              Just controller -> do
-                upgradeResult <- upgradeController creep controller
-                if upgradeResult == err_not_in_range
-                then do
-                  moveTo creep (TargetObj controller) # ignoreM
-                else do 
-                  pure unit
       else do 
         setMemory creep "working" false

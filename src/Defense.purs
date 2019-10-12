@@ -23,15 +23,6 @@ damaged struct =
 runTower :: RawRoomObject (RawStructure (RawOwnedStructure (RawTower))) -> Effect Unit
 runTower tower = do
   let roomPos = pos tower 
-  closestDamageStructure <- findClosestByRange' roomPos (OfType find_my_structures) damaged
-  case closestDamageStructure of
-    Left e -> pure unit
-    Right maybeStruct -> 
-      case maybeStruct of
-        Just struct -> do
-          code <- repair tower struct
-          pure unit
-        Nothing -> pure unit
   closestHostile <- findClosestByRange roomPos (OfType find_hostile_creeps)
   case closestHostile of 
     Left e -> pure unit

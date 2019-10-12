@@ -6,12 +6,15 @@ import CreepRoles (Harvester)
 import Data.Array (head, filter)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Screeps (err_not_in_range, find_my_structures, find_sources, resource_energy, structure_spawn, structure_extension)
+import Screeps (err_not_in_range, find_my_structures, find_sources, resource_energy)
 import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, transferToStructure)
+import Screeps.Extension as Extension
 import Screeps.Game (getGameGlobal)
 import Screeps.Room (find)
 import Screeps.RoomObject (room)
-import Screeps.Structure (structureType)
+import Screeps.Spawn as Spawn
+import Screeps.Tower as Tower 
+-- (energy, energyCapacity, toTower)
 import Screeps.Types (RawRoomObject, RawStructure, TargetPosition(..))
 
 ignore :: forall a. a -> Unit
@@ -22,7 +25,18 @@ ignoreM m = m <#> ignore
 
 desiredTarget :: forall a. RawRoomObject (RawStructure a) -> Boolean
 desiredTarget struct = 
-  (structureType struct) == structure_spawn || (structureType struct) == structure_extension
+  case (Tower.toTower struct) of
+    Just tower -> 
+       Tower.energy tower < Tower.energyCapacity tower
+    Nothing ->
+      case (Spawn.toSpawn struct) of
+        Just spawn -> 
+          Spawn.energy spawn < Spawn.energyCapacity spawn
+        Nothing ->
+          case (Extension.toExtension struct) of
+            Just ext ->
+              Extension.energy ext < Extension.energyCapacity ext
+            Nothing -> false
 
 runHarvester :: Harvester -> Effect Unit
 runHarvester { creep, mem } =
