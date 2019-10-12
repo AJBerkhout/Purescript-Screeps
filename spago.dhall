@@ -5,18 +5,19 @@ You can edit this file as you like.
 { name =
     "my-project"
 , dependencies =
-    [ "effect"
+    [ "argonaut"
     , "console"
-    , "psci-support"
-    , "maybe"
+    , "debug"
+    , "effect"
     , "either"
-    , "argonaut"
-    , "ordered-collections"
-    , "generics-rep"
+    , "exceptions"
     , "foreign-object"
     , "functions"
+    , "generics-rep"
+    , "maybe"
+    , "ordered-collections"
     , "partial"
-    , "exceptions"
+    , "psci-support"
     ]
 , packages =
     ./packages.dhall
