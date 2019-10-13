@@ -32,7 +32,6 @@ runBuilder builder@{ creep, mem } = do
     case ((amtCarrying creep resource_energy) == 0) of
       true -> 
         do
-          s <- say creep "Harvesting"
           setMemory builder (mem { working = false })
       false ->
         case head (find (room creep) find_construction_sites) of
@@ -46,7 +45,6 @@ runBuilder builder@{ creep, mem } = do
   else do
     case ((amtCarrying creep resource_energy) == (carryCapacity creep)) of
       true -> do
-        s <- say creep "working"
         setMemory builder (mem { working = true })
       false -> do
         case head (find (room creep) find_sources) of

@@ -12,12 +12,14 @@ data Role
   | BuilderRole
   | UpgraderRole
   | LDHarvesterRole
+  | RepairerRole
 
 instance showRole :: Show Role where
   show HarvesterRole = "harvester"
   show BuilderRole = "builder"
   show UpgraderRole = "upgrader"
   show LDHarvesterRole = "ldharvester"
+  show RepairerRole = "repairer"
 
 instance decodeRole :: DecodeJson Role where
   decodeJson json = ans
@@ -27,6 +29,7 @@ instance decodeRole :: DecodeJson Role where
         | jsonStr == (Just $ show BuilderRole) = Right BuilderRole
         | jsonStr == (Just $ show UpgraderRole) = Right UpgraderRole
         | jsonStr == (Just $ show LDHarvesterRole) = Right LDHarvesterRole
+        | jsonStr == (Just $ show RepairerRole) = Right RepairerRole
         | otherwise = Left $ "unable to parse json as role:\n" <> JSON.stringify json
       
       jsonStr = JSON.toString json
@@ -36,5 +39,5 @@ instance encodeRole :: EncodeJson Role where
   encodeJson BuilderRole = JSON.fromString $ show BuilderRole 
   encodeJson UpgraderRole = JSON.fromString $ show UpgraderRole
   encodeJson LDHarvesterRole = JSON.fromString $ show LDHarvesterRole
-type LDHarvesterMemory = { role :: Role, targetRoom :: String, home :: String}
+  encodeJson RepairerRole = JSON.fromString $ show RepairerRole
 

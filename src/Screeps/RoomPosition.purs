@@ -3,9 +3,9 @@ module Screeps.RoomPosition where
 
 import Prelude
 
-import Effect (Effect)
 import Data.Either (Either)
 import Data.Maybe (Maybe(Nothing))
+import Effect (Effect)
 import Effect.Exception (Error, try)
 import Screeps.FFI (runThisEffFn0, runThisEffFn1, runThisEffFn2, runThisEffFn3, runThisFn1, runThisFn2, runThisFn3, selectMaybes, toMaybe, unsafeField)
 import Screeps.Room (PathOptions)
