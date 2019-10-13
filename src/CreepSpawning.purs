@@ -4,23 +4,23 @@ import Prelude
 
 import CreepClassification (CreepMemory(..), VocationalCreep(..), classifyCreep, spawnCreep)
 import CreepRoles (Role(..))
-import Data.Argonaut (stringify)
-import Data.Array (concat, filter, fromFoldable, head, length, mapMaybe, null, (..))
+
+import Data.Array (concat, fromFoldable, length, mapMaybe, (..))
 import Data.Either (Either(..))
-import Data.Map (isEmpty)
+
 import Data.Maybe (Maybe(..))
-import Data.Traversable (for, for_)
+import Data.Traversable (for)
 import Effect (Effect)
 import Effect.Class.Console (logShow)
-import Effect.Console (log)
-import Foreign.Object (values)
-import Screeps.Constants (find_hostile_creeps, ok, part_carry, part_move, part_work)
-import Screeps.Game (creeps, getGameGlobal, rooms)
-import Screeps.Map (AdjacentRooms, describeExits, getAdjacentRooms)
-import Screeps.Memory (toJson)
-import Screeps.Room (energyAvailable, energyCapacityAvailable, find, name)
+
+
+import Screeps.Constants (ok, part_carry, part_move, part_work)
+import Screeps.Game (creeps, getGameGlobal)
+import Screeps.Map (getAdjacentRooms)
+
+import Screeps.Room (energyAvailable, energyCapacityAvailable, name)
 import Screeps.RoomObject (room)
-import Screeps.Spawn (canCreateCreep, canCreateCreep', spawning)
+import Screeps.Spawn (canCreateCreep, spawning)
 import Screeps.Types (ReturnCode, Spawn)
 
 ignore :: forall a. a -> Unit
