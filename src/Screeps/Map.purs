@@ -3,18 +3,50 @@ module Screeps.Map where
 
 import Prelude
 
-
-import Screeps.Types (FindType, ReturnCode, Room, TargetPosition(..), Terrain)
+import Data.Maybe (Maybe(..))
 import Screeps.FFI (runThisFn1, runThisFn2, runThisFn3)
 import Screeps.Game as Game
+import Screeps.Types (FindType, ReturnCode, Room, TargetPosition(..), Terrain)
+
 type ExitsInfo =
   { top :: String
   , left :: String
   , right :: String
   , bottom :: String }
+
+type AdjacentRooms =
+  { topRoom :: Maybe String
+  , leftRoom :: Maybe String
+  , rightRoom :: Maybe String
+  , bottomRoom :: Maybe String }
     
 foreign import describeExits :: String -> ExitsInfo
 type RoomRoute = Array ExitToRoom
+
+getAdjacentRooms :: String -> AdjacentRooms
+getAdjacentRooms currentRoom = 
+  let 
+    exitInfo = describeExits currentRoom
+    
+    topRoom = 
+      case exitInfo.top of
+        "" -> Nothing
+        x -> Just x
+    rightRoom = 
+      case exitInfo.right of
+        "" -> Nothing
+        x -> Just x
+    leftRoom = 
+      case exitInfo.left of
+        "" -> Nothing
+        x -> Just x
+    bottomRoom = 
+      case exitInfo.bottom of
+        "" -> Nothing
+        x -> Just x
+    in
+  {topRoom, rightRoom, leftRoom, bottomRoom}
+
 
 type ExitToRoom =
   { exit :: FindType Unit

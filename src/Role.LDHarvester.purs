@@ -40,7 +40,7 @@ desiredTarget struct =
             Just ext ->
               Extension.energy ext < Extension.energyCapacity ext
             Nothing -> false
-
+            
 runLDHarvester :: LDHarvester -> Effect Unit
 runLDHarvester { creep, mem: {targetRoom, home} } =
   let 

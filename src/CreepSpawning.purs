@@ -5,18 +5,20 @@ import Prelude
 import CreepClassification (CreepMemory(..), VocationalCreep(..), classifyCreep, spawnCreep)
 import CreepRoles (Role(..))
 import Data.Argonaut (stringify)
-import Data.Array (concat, (..), fromFoldable, length, mapMaybe)
+import Data.Array (concat, filter, fromFoldable, head, length, mapMaybe, null, (..))
 import Data.Either (Either(..))
+import Data.Map (isEmpty)
 import Data.Maybe (Maybe(..))
-import Data.Traversable (for)
+import Data.Traversable (for, for_)
 import Effect (Effect)
 import Effect.Class.Console (logShow)
 import Effect.Console (log)
-import Screeps.Constants (ok, part_carry, part_move, part_work)
-import Screeps.Game (creeps, getGameGlobal)
-import Screeps.Map (describeExits)
+import Foreign.Object (values)
+import Screeps.Constants (find_hostile_creeps, ok, part_carry, part_move, part_work)
+import Screeps.Game (creeps, getGameGlobal, rooms)
+import Screeps.Map (AdjacentRooms, describeExits, getAdjacentRooms)
 import Screeps.Memory (toJson)
-import Screeps.Room (energyAvailable, energyCapacityAvailable, name)
+import Screeps.Room (energyAvailable, energyCapacityAvailable, find, name)
 import Screeps.RoomObject (room)
 import Screeps.Spawn (canCreateCreep, canCreateCreep', spawning)
 import Screeps.Types (ReturnCode, Spawn)
@@ -73,21 +75,40 @@ spawnCreepIfNeeded spawn =
           Just x -> 
             pure unit
     else do pure unit
-          
+
 createLDHarvesterForAdjacentRoom :: Spawn -> Int -> Effect Unit
 createLDHarvesterForAdjacentRoom spawn energy =
   let 
     noName = Nothing
-    exitInfo = describeExits (name (room spawn))
-    targetRoom = exitInfo.right
+    adjRooms = getAdjacentRooms (name (room spawn))
     workParts = [part_work, part_work]
     numberOtherParts = (energy - 200) / 100
     moveParts = map (\n -> part_move) (0..(numberOtherParts-1))
     carryParts = map (\n -> part_carry) (0..(numberOtherParts-1))
     allParts = concat [workParts, moveParts, carryParts]
   in 
-    spawnCreep spawn allParts noName (LDHarvesterMemory {role: LDHarvesterRole, home: (name (room spawn)), targetRoom})
-    >>= logShow
+    do
+      case adjRooms.topRoom of
+        Just targetRoom ->
+          spawnCreep spawn allParts noName (LDHarvesterMemory {role: LDHarvesterRole, home: (name (room spawn)), targetRoom})
+          >>= logShow
+        Nothing ->
+          case adjRooms.leftRoom of
+            Just targetRoom ->
+              spawnCreep spawn allParts noName (LDHarvesterMemory {role: LDHarvesterRole, home: (name (room spawn)), targetRoom})
+              >>= logShow
+            Nothing ->
+              case adjRooms.rightRoom of
+                Just targetRoom ->
+                  spawnCreep spawn allParts noName (LDHarvesterMemory {role: LDHarvesterRole, home: (name (room spawn)), targetRoom})
+                  >>= logShow
+                Nothing ->
+                  case adjRooms.bottomRoom of
+                    Just targetRoom ->
+                      spawnCreep spawn allParts noName (LDHarvesterMemory {role: LDHarvesterRole, home: (name (room spawn)), targetRoom})
+                      >>= logShow
+                    Nothing ->
+                      pure unit
 
 createBalancedCreep :: Spawn -> Int -> CreepMemory -> Effect (Either ReturnCode String)
 createBalancedCreep spawn energy mem =
