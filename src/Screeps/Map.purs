@@ -2,26 +2,26 @@
 module Screeps.Map where
 
 import Prelude
-import Data.Maybe (Maybe)
+
 
 import Screeps.Types (FindType, ReturnCode, Room, TargetPosition(..), Terrain)
-import Screeps.FFI (toMaybe, runThisFn1, runThisFn2, runThisFn3)
+import Screeps.FFI (runThisFn1, runThisFn2, runThisFn3)
 import Screeps.Game as Game
-
 type ExitsInfo =
-  { "1" :: String
-  , "3" :: String
-  , "5" :: String
-  , "7" :: String }
-
+  { top :: String
+  , left :: String
+  , right :: String
+  , bottom :: String }
+    
+foreign import describeExits :: String -> ExitsInfo
 type RoomRoute = Array ExitToRoom
 
 type ExitToRoom =
   { exit :: FindType Unit
   , room :: String }
 
-describeExits :: String -> Maybe ExitsInfo
-describeExits name = toMaybe $ runThisFn1 "describeExits" Game.map name
+-- describeExits :: String -> Maybe ExitsInfo
+-- describeExits name = toMaybe $ runThisFn1 "describeExits" Game.map name
 
 -- TODO: options
 findExit :: Room -> Room -> ReturnCode
