@@ -4,23 +4,20 @@ import Prelude
 
 import CreepRoles (UnknownCreepType(..), VocationalCreep(..), classifyCreep)
 import CreepSpawning (spawnCreepIfNeeded)
-
 import Data.Either (Either(..))
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
-
 import Effect (Effect)
-
 import Effect.Console (log)
 import Role.Builder (runBuilder)
 import Role.Harvester (runHarvester)
+import Role.LDHarvester (runLDHarvester)
 import Role.Upgrader (runUpgrader)
 import Screeps.Constants (find_my_structures)
 import Screeps.Defense (runTower)
 import Screeps.Game (creeps, getGameGlobal, spawns)
 import Screeps.Room (find')
 import Screeps.RoomObject (room)
-
 import Screeps.Tower (toTower)
 import Screeps.Types (Creep, Structure)
 
@@ -37,12 +34,12 @@ matchUnit :: Either UnknownCreepType VocationalCreep -> Effect Unit
 matchUnit (Right (Harvester creep)) = runHarvester creep
 matchUnit (Right (Upgrader creep)) = runUpgrader creep
 matchUnit (Right (Builder creep)) = runBuilder creep
+matchUnit (Right (LDHarvester creep)) = runLDHarvester creep
 matchUnit (Left (UnknownCreepType err)) = log $ "One of the creeps has a memory I can't parse.\n" <> err
 
 runCreepRole :: Creep -> Effect Unit
 runCreepRole creep = classifyCreep creep >>= matchUnit  
-
-      
+     
    
 isTower :: forall a. Structure a -> Boolean
 isTower struct =
