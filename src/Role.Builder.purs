@@ -1,16 +1,16 @@
-module Role.Builder (runBuilder) where
+module Role.Builder (runBuilder, BuilderMemory, Builder) where
 
 import Prelude
 
+import CreepRoles (Role)
 import Data.Array (head)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import CreepRoles (Upgrader)
 import Screeps (err_not_in_range, find_construction_sites, find_sources, resource_energy)
-import Screeps.Creep (amtCarrying, build, carryCapacity, harvestSource, moveTo, say, setMemory)
+import Screeps.Creep (amtCarrying, build, carryCapacity, harvestSource, moveTo, say, setAllMemory)
 import Screeps.Room (find)
 import Screeps.RoomObject (room)
-import Screeps.Types (TargetPosition(..))
+import Screeps.Types (TargetPosition(..), Creep)
 
 ignore :: forall a. a -> Unit
 ignore _ = unit
@@ -18,16 +18,22 @@ ignore _ = unit
 ignoreM :: forall m a. Monad m => m a -> m Unit
 ignoreM m = m <#> ignore 
 
-runBuilder :: Upgrader -> Effect Unit
-runBuilder { creep, mem: { working } } = do
+type BuilderMemory = { role :: Role, working :: Boolean }
+type Builder = { creep :: Creep, mem :: BuilderMemory }
 
-  if working
-  then
+setMemory :: Builder -> BuilderMemory -> Effect Unit
+setMemory {creep} mem = setAllMemory creep mem 
+
+runBuilder :: Builder -> Effect Unit
+runBuilder builder@{ creep, mem } = do
+
+  if mem.working
+  then do
     case ((amtCarrying creep resource_energy) == 0) of
       true -> 
         do
           s <- say creep "Harvesting"
-          setMemory creep "working" false
+          setMemory builder (mem { working = false })
       false ->
         case head (find (room creep) find_construction_sites) of
           Nothing -> do
@@ -37,12 +43,12 @@ runBuilder { creep, mem: { working } } = do
             if buildResult == err_not_in_range 
             then moveTo creep (TargetObj targetSite) # ignoreM
             else pure unit
-  else
+  else do
     case ((amtCarrying creep resource_energy) == (carryCapacity creep)) of
       true -> do
         s <- say creep "working"
-        setMemory creep "working" true
-      false ->
+        setMemory builder (mem { working = true })
+      false -> do
         case head (find (room creep) find_sources) of
           Nothing -> do
             pure unit
@@ -53,4 +59,3 @@ runBuilder { creep, mem: { working } } = do
             else pure unit
               
 
-      

@@ -2,7 +2,8 @@ module CreepSpawning where
 
 import Prelude
 
-import CreepRoles (CreepMemory(..), Role(..), VocationalCreep(..), classifyCreep, spawnCreep)
+import CreepClassification (CreepMemory(..), VocationalCreep(..), classifyCreep, spawnCreep)
+import CreepRoles (Role(..))
 import Data.Array (concat, (..), fromFoldable, length, mapMaybe)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
@@ -32,7 +33,7 @@ spawnCreepIfNeeded spawn =
   in 
     do
       thisGame <- getGameGlobal
-      creepsAndRolesObj <- for (creeps thisGame) $ classifyCreep 
+      creepsAndRolesObj <- for (creeps thisGame) $ classifyCreep
       let
         creepsAndRoles = fromFoldable creepsAndRolesObj 
         harvesters = creepsAndRoles # mapMaybe (case _ of 

@@ -2,7 +2,7 @@ module Main (loop) where
 
 import Prelude
 
-import CreepRoles (UnknownCreepType(..), VocationalCreep(..), classifyCreep)
+import CreepClassification (UnknownCreepType(..), VocationalCreep(..), classifyCreep)
 import CreepSpawning (spawnCreepIfNeeded)
 import Data.Either (Either(..))
 import Data.Foldable (for_)

@@ -1,13 +1,12 @@
-module Role.LDHarvester (runLDHarvester) where
+module Role.LDHarvester (runLDHarvester, LDHarvesterMemory, LDHarvester) where
 
 import Prelude
 
-import CreepRoles (LDHarvester)
+import CreepRoles (Role)
 import Data.Array (head, filter)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Effect.Console (log)
 import Screeps (err_not_in_range, find_my_structures, find_sources, resource_energy)
 import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, transferToStructure)
 import Screeps.Extension as Extension
@@ -16,13 +15,16 @@ import Screeps.RoomObject (pos, room)
 import Screeps.RoomPosition (findClosestByRange)
 import Screeps.Spawn as Spawn
 import Screeps.Tower as Tower
-import Screeps.Types (FindContext(..), RawRoomObject, RawStructure, TargetPosition(..))
+import Screeps.Types (FindContext(..), RawRoomObject, RawStructure, TargetPosition(..), Creep)
 
 ignore :: forall a. a -> Unit
 ignore _ = unit
 
 ignoreM :: forall m a. Monad m => m a -> m Unit
 ignoreM m = m <#> ignore 
+
+type LDHarvesterMemory = { role :: Role, targetRoom :: String, home :: String }
+type LDHarvester = { creep :: Creep, mem :: LDHarvesterMemory }
 
 desiredTarget :: forall a. RawRoomObject (RawStructure a) -> Boolean
 desiredTarget struct = 
