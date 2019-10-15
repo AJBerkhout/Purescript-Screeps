@@ -7,15 +7,15 @@ import Data.Array (head, filter)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Screeps (err_not_in_range, find_my_structures, find_sources, resource_energy)
+import Screeps (err_not_in_range, find_my_structures, find_sources, find_sources_active, resource_energy)
 import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, transferToStructure)
 import Screeps.Extension as Extension
 import Screeps.Room (RoomIdentifier(..), find, findExitTo, name)
 import Screeps.RoomObject (pos, room)
-import Screeps.RoomPosition (findClosestByRange)
+import Screeps.RoomPosition (findClosestByPath, findClosestByRange)
 import Screeps.Spawn as Spawn
 import Screeps.Tower as Tower
-import Screeps.Types (FindContext(..), RawRoomObject, RawStructure, TargetPosition(..), Creep)
+import Screeps.Types (Creep, FindContext(..), RawRoomObject, RawStructure, TargetPosition(..))
 
 ignore :: forall a. a -> Unit
 ignore _ = unit
@@ -70,14 +70,15 @@ runLDHarvester { creep, mem: {targetRoom, home} } =
                   _-> do pure unit
       false -> 
         case (targetRoom == (name (room creep))) of
-          true->
-            case head (find (room creep) find_sources) of
-              Nothing -> pure unit
-              Just targetSource -> do
+          true -> do
+            source <- findClosestByPath (pos creep) (OfType find_sources_active)
+            case source of
+              Right (Just targetSource) -> do
                 harvestResult <- harvestSource creep targetSource
                 if harvestResult == err_not_in_range
                 then moveTo creep (TargetObj targetSource) # ignoreM
                 else pure unit
+              _ -> pure unit
           false -> 
             let maybeExit = findExitTo (room creep) (RoomName targetRoom) in
               case maybeExit of

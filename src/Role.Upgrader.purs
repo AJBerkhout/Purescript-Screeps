@@ -3,15 +3,16 @@ module Role.Upgrader (runUpgrader, UpgraderMemory, Upgrader) where
 import Prelude
 
 import CreepRoles (Role)
-import Data.Array (head)
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Screeps (err_not_in_range, find_sources, resource_energy)
-import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, say, setAllMemory, upgradeController)
+import Screeps (err_not_in_range, find_sources_active, resource_energy)
+import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, setAllMemory, upgradeController)
 import Screeps.Game (getGameGlobal)
-import Screeps.Room (find, controller)
-import Screeps.RoomObject (room)
-import Screeps.Types (TargetPosition(..), Creep)
+import Screeps.Room (controller)
+import Screeps.RoomObject (pos, room)
+import Screeps.RoomPosition (findClosestByPath)
+import Screeps.Types (Creep, FindContext(..), TargetPosition(..))
 
 ignore :: forall a. a -> Unit
 ignore _ = unit
@@ -33,7 +34,6 @@ runUpgrader upgrader@{ creep, mem } =
   then
     if amtCarrying creep resource_energy == 0
     then do
-      s <- say creep "Harvesting"
       setMemory upgrader (mem { working = false })
     else do
       game <- getGameGlobal
@@ -48,14 +48,14 @@ runUpgrader upgrader@{ creep, mem } =
   else 
     if amtCarrying creep resource_energy == carryCapacity creep
     then do
-      s <- say creep "Upgrading"
       setMemory upgrader (mem { working = true }) 
-    else
-      case head (find (room creep) find_sources) of
-        Nothing -> pure unit
-        Just targetSource -> do
+    else do
+      source <- findClosestByPath (pos creep) (OfType find_sources_active)
+      case source of
+        Right (Just targetSource) -> do
           harvestResult <- harvestSource creep targetSource
           if harvestResult == err_not_in_range
           then moveTo creep (TargetObj targetSource) # ignoreM
           else pure unit
-        
+        _ -> pure unit
+      

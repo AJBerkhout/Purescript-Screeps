@@ -115,11 +115,11 @@ createLDHarvesterForAdjacentRoom spawn energy =
 createBalancedCreep :: Spawn -> Int -> CreepMemory -> Effect (Either ReturnCode String)
 createBalancedCreep spawn energy mem =
   let 
-    numberOfParts = energy / 200
+    numberOfParts = (energy-100) / 200
     moveParts = map (\n -> part_move) (0..(numberOfParts-1))
     workParts = map (\n -> part_carry) (0..(numberOfParts-1))
     carryParts = map (\n -> part_work) (0..(numberOfParts-1))
-    allParts = concat [moveParts, workParts, carryParts]
+    allParts = concat [[part_work], moveParts, workParts, carryParts]
     noName = Nothing
   in do
     spawnCreep spawn allParts noName mem

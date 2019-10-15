@@ -4,18 +4,19 @@ import Prelude
 
 import CreepRoles (Role)
 import Data.Array (head, filter)
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Screeps (err_not_in_range, find_my_structures, find_sources, resource_energy)
+import Screeps (err_not_in_range, find_my_structures, find_sources, find_sources_active, resource_energy)
 import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, transferToStructure)
 import Screeps.Extension as Extension
 import Screeps.Game (getGameGlobal)
 import Screeps.Room (find)
-import Screeps.RoomObject (room)
+import Screeps.RoomObject (pos, room)
+import Screeps.RoomPosition (findClosestByPath)
 import Screeps.Spawn as Spawn
-import Screeps.Tower as Tower 
--- (energy, energyCapacity, toTower)
-import Screeps.Types (RawRoomObject, RawStructure, TargetPosition(..), Creep)
+import Screeps.Tower as Tower
+import Screeps.Types (Creep, FindContext(..), RawRoomObject, RawStructure, TargetPosition(..))
 
 ignore :: forall a. a -> Unit
 ignore _ = unit
@@ -45,14 +46,15 @@ runHarvester :: Harvester -> Effect Unit
 runHarvester { creep } =
 
   if amtCarrying creep resource_energy < carryCapacity creep
-  then
-    case head (find (room creep) find_sources) of
-      Nothing -> pure unit
-      Just targetSource -> do
+  then do
+    source <- findClosestByPath (pos creep) (OfType find_sources_active)
+    case source of
+      Right (Just targetSource) -> do
         harvestResult <- harvestSource creep targetSource
         if harvestResult == err_not_in_range
         then moveTo creep (TargetObj targetSource) # ignoreM
         else pure unit
+      _ -> pure unit
         
   else do
     game <- getGameGlobal
