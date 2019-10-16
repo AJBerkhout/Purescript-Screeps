@@ -1,10 +1,11 @@
-module Role.Repairer (runRepairer, RepairerMemory, Repairer) where
+module Role.WallRepairer (runWallRepairer, WallRepairerMemory, WallRepairer) where
 
 import Prelude
 
 import CreepRoles (Role)
 import Data.Array (filter, head)
 import Data.Either (Either(..))
+import Data.Int (toNumber)
 import Data.Maybe (Maybe(..), isJust)
 import Effect (Effect)
 import Screeps (err_not_in_range, find_construction_sites, find_sources_active, find_structures, resource_energy, structure_wall)
@@ -21,14 +22,14 @@ ignore _ = unit
 ignoreM :: forall m a. Monad m => m a -> m Unit
 ignoreM m = m <#> ignore 
 
-type RepairerMemory = { role :: Role, working :: Boolean }
-type Repairer = { creep :: Creep, mem :: RepairerMemory }
+type WallRepairerMemory = { role :: Role, working :: Boolean }
+type WallRepairer = { creep :: Creep, mem :: WallRepairerMemory }
 
-setMemory :: Repairer -> RepairerMemory -> Effect Unit
+setMemory :: WallRepairer -> WallRepairerMemory -> Effect Unit
 setMemory {creep} mem = setAllMemory creep mem 
 
-runRepairer :: Repairer -> Effect Unit
-runRepairer repairer@{ creep, mem } = do
+runWallRepairer :: WallRepairer -> Effect Unit
+runWallRepairer repairer@{ creep, mem } = do
 
   if mem.working
   then do
@@ -37,7 +38,7 @@ runRepairer repairer@{ creep, mem } = do
         do
           setMemory repairer (mem { working = false })
       false ->
-        case head (filter (\n -> hits n < hitsMax n && (not isJust (unsafeCast structure_wall n))) (find (room creep) find_structures)) of
+        case head (filter (\n -> (toNumber (hits n) / toNumber (hitsMax n)) < 0.0003 && (isJust (unsafeCast structure_wall n))) (find (room creep) find_structures)) of
           Nothing -> 
             case head (find (room creep) find_construction_sites) of
               Nothing -> do

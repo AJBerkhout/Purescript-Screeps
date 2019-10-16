@@ -14,6 +14,7 @@ import Role.Harvester (runHarvester)
 import Role.LDHarvester (runLDHarvester)
 import Role.Repairer (runRepairer)
 import Role.Upgrader (runUpgrader)
+import Role.WallRepairer (runWallRepairer)
 import Screeps.Constants (find_my_structures)
 import Screeps.Defense (runTower)
 import Screeps.Game (creeps, getGameGlobal, spawns)
@@ -37,6 +38,7 @@ matchUnit (Right (Upgrader creep)) = runUpgrader creep
 matchUnit (Right (Builder creep)) = runBuilder creep
 matchUnit (Right (LDHarvester creep)) = runLDHarvester creep
 matchUnit (Right (Repairer creep)) = runRepairer creep
+matchUnit (Right (WallRepairer creep)) = runWallRepairer creep
 matchUnit (Left (UnknownCreepType err)) = log $ "One of the creeps has a memory I can't parse.\n" <> err
 
 runCreepRole :: Creep -> Effect Unit

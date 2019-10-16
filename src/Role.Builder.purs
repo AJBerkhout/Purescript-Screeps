@@ -8,8 +8,9 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Screeps (err_not_in_range, find_construction_sites, find_sources_active, resource_energy)
-import Screeps.Creep (amtCarrying, build, carryCapacity, harvestSource, moveTo, setAllMemory)
-import Screeps.Room (find)
+import Screeps.Creep (amtCarrying, build, carryCapacity, harvestSource, moveTo, setAllMemory, upgradeController)
+import Screeps.Game (getGameGlobal)
+import Screeps.Room (controller, find)
 import Screeps.RoomObject (pos, room)
 import Screeps.RoomPosition (findClosestByPath)
 import Screeps.Types (Creep, FindContext(..), TargetPosition(..))
@@ -57,6 +58,14 @@ runBuilder builder@{ creep, mem } = do
             if harvestResult == err_not_in_range
             then moveTo creep (TargetObj targetSource) # ignoreM
             else pure unit
-          _ -> pure unit
+          _ -> do
+            game <- getGameGlobal
+            case (controller (room creep)) of
+              Nothing -> pure unit
+              Just controller -> do
+                upgradeResult <- upgradeController creep controller
+                if upgradeResult == err_not_in_range
+                then moveTo creep (TargetObj controller) # ignoreM
+                else pure unit
 
 

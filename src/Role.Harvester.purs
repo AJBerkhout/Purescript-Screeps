@@ -7,11 +7,11 @@ import Data.Array (head, filter)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Screeps (err_not_in_range, find_my_structures, find_sources, find_sources_active, resource_energy)
-import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, transferToStructure)
+import Screeps (err_not_in_range, find_my_structures, find_sources_active, resource_energy)
+import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, setAllMemory, transferToStructure, upgradeController)
 import Screeps.Extension as Extension
 import Screeps.Game (getGameGlobal)
-import Screeps.Room (find)
+import Screeps.Room (controller, find)
 import Screeps.RoomObject (pos, room)
 import Screeps.RoomPosition (findClosestByPath)
 import Screeps.Spawn as Spawn
@@ -24,8 +24,11 @@ ignore _ = unit
 ignoreM :: forall m a. Monad m => m a -> m Unit
 ignoreM m = m <#> ignore 
 
-type HarvesterMemory = { role :: Role }
+type HarvesterMemory = { role :: Role, working :: Boolean }
 type Harvester = { creep :: Creep, mem :: HarvesterMemory }
+
+setMemory :: Harvester -> HarvesterMemory -> Effect Unit
+setMemory {creep} mem = setAllMemory creep mem 
 
 desiredTarget :: forall a. RawRoomObject (RawStructure a) -> Boolean
 desiredTarget struct = 
@@ -43,25 +46,38 @@ desiredTarget struct =
             Nothing -> false
 
 runHarvester :: Harvester -> Effect Unit
-runHarvester { creep } =
-
-  if amtCarrying creep resource_energy < carryCapacity creep
-  then do
-    source <- findClosestByPath (pos creep) (OfType find_sources_active)
-    case source of
-      Right (Just targetSource) -> do
-        harvestResult <- harvestSource creep targetSource
-        if harvestResult == err_not_in_range
-        then moveTo creep (TargetObj targetSource) # ignoreM
-        else pure unit
-      _ -> pure unit
-        
-  else do
-    game <- getGameGlobal
-    case (head (filter desiredTarget (find (room creep) find_my_structures))) of
-      Nothing -> pure unit
-      Just spawn1 -> do
-        transferResult <- transferToStructure creep spawn1 resource_energy
-        if transferResult == err_not_in_range
-        then moveTo creep (TargetObj spawn1) # ignoreM
-        else pure unit
+runHarvester harvester@{creep, mem} =
+  if mem.working
+  then
+    if amtCarrying creep resource_energy == 0
+    then do
+      setMemory harvester (mem { working = false })
+    else do
+      game <- getGameGlobal
+      case (head (filter desiredTarget (find (room creep) find_my_structures))) of
+        Nothing -> 
+          case (controller (room creep)) of
+            Nothing -> pure unit
+            Just controller -> do
+              upgradeResult <- upgradeController creep controller
+              if upgradeResult == err_not_in_range
+              then moveTo creep (TargetObj controller) # ignoreM
+              else pure unit
+        Just spawn1 -> do
+          transferResult <- transferToStructure creep spawn1 resource_energy
+          if transferResult == err_not_in_range
+          then moveTo creep (TargetObj spawn1) # ignoreM
+          else pure unit
+  else
+    if amtCarrying creep resource_energy == carryCapacity creep
+    then do
+      setMemory harvester (mem { working = true }) 
+    else do
+      source <- findClosestByPath (pos creep) (OfType find_sources_active)
+      case source of
+        Right (Just targetSource) -> do
+          harvestResult <- harvestSource creep targetSource
+          if harvestResult == err_not_in_range
+          then moveTo creep (TargetObj targetSource) # ignoreM
+          else pure unit
+        _ -> pure unit 

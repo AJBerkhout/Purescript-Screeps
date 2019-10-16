@@ -28,10 +28,11 @@ spawnCreepIfNeeded :: Spawn -> Effect Unit
 spawnCreepIfNeeded spawn =
   let 
     minHarvesters = 2
-    minUpgraders = 2
-    minBuilders = 2
+    minUpgraders = 1
+    minBuilders = 1
     minRepairers = 1
-    minLDHarvesters = 2
+    minWallRepairers = 1
+    minLDHarvesters = 3
   in 
     do
       thisGame <- getGameGlobal
@@ -50,6 +51,9 @@ spawnCreepIfNeeded spawn =
         repairers = creepsAndRoles # mapMaybe (case _ of
           (Right (Repairer r)) -> Just r
           _ -> Nothing)
+        wallRepairers = creepsAndRoles # mapMaybe (case _ of
+          (Right (WallRepairer r)) -> Just r
+          _ -> Nothing)
         ldHarvesters = creepsAndRoles # mapMaybe (case _ of 
           (Right (LDHarvester b)) -> Just b
           _ -> Nothing)
@@ -58,19 +62,22 @@ spawnCreepIfNeeded spawn =
       if (canCreate == ok) then
         case (spawning spawn) of
           Nothing -> 
-            if ((length harvesters) < minHarvesters && maxEnergy >= energyAvailable (room spawn)) then
-              createBalancedCreep spawn maxEnergy (HarvesterMemory {role: HarvesterRole})
+            if (length harvesters < minHarvesters) then
+              createBalancedCreep spawn (energyAvailable (room spawn)) (HarvesterMemory {role: HarvesterRole, working: true})
               >>= logShow
-            else if ((length ldHarvesters) < minLDHarvesters && maxEnergy >= energyAvailable (room spawn)) then
-              createLDHarvesterForAdjacentRoom spawn maxEnergy
-            else if ((length builders) < minBuilders && maxEnergy >= energyAvailable (room spawn)) then
-              createBalancedCreep spawn maxEnergy (BuilderMemory {role: BuilderRole, working: true})
+            else if ((length ldHarvesters) < minLDHarvesters) then
+              createLDHarvesterForAdjacentRoom spawn (energyAvailable (room spawn))
+            else if ((length builders) < minBuilders) then
+              createBalancedCreep spawn (energyAvailable (room spawn)) (BuilderMemory {role: BuilderRole, working: true})
               >>= logShow
-            else if ((length upgraders) < minUpgraders && maxEnergy >= energyAvailable (room spawn)) then
-              createBalancedCreep spawn maxEnergy (UpgraderMemory {role: UpgraderRole, working: true})
+            else if ((length upgraders) < minUpgraders) then
+              createBalancedCreep spawn (energyAvailable (room spawn)) (UpgraderMemory {role: UpgraderRole, working: true})
               >>= logShow
-            else if ((length repairers) < minRepairers && maxEnergy >= energyAvailable (room spawn)) then
-              createBalancedCreep spawn maxEnergy (RepairerMemory {role: RepairerRole, working: true})
+            else if ((length repairers) < minRepairers) then
+              createBalancedCreep spawn (energyAvailable (room spawn)) (RepairerMemory {role: RepairerRole, working: true})
+              >>= logShow
+            else if ((length wallRepairers) < minWallRepairers) then
+              createBalancedCreep spawn (energyAvailable (room spawn)) (WallRepairerMemory {role: WallRepairerRole, working: true})
               >>= logShow
             else 
               pure unit
