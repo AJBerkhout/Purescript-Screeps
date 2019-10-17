@@ -10,7 +10,7 @@ import Data.Maybe (Maybe(..))
 import Data.Traversable (for)
 import Effect (Effect)
 import Effect.Class.Console (logShow)
-import Screeps.Constants (ok, part_carry, part_move, part_work)
+import Screeps.Constants (ok, part_attack, part_carry, part_heal, part_move, part_tough, part_work)
 import Screeps.Game (creeps, getGameGlobal)
 import Screeps.Map (getAdjacentRooms)
 import Screeps.Room (energyAvailable, energyCapacityAvailable, name)
@@ -24,8 +24,8 @@ ignore _ = unit
 ignoreM :: forall m a. Monad m => m a -> m Unit
 ignoreM m = m <#> ignore 
 
-spawnCreepIfNeeded :: Spawn -> Effect Unit
-spawnCreepIfNeeded spawn =
+spawnCreepIfNeeded :: Spawn -> Boolean -> Effect Unit
+spawnCreepIfNeeded spawn battleStations =
   let 
     minHarvesters = 2
     minUpgraders = 1
@@ -33,6 +33,14 @@ spawnCreepIfNeeded spawn =
     minRepairers = 1
     minWallRepairers = 1
     minLDHarvesters = 3
+    minHealers = 
+      if battleStations then 
+        1
+      else 0
+    minGuards =
+      if battleStations then
+        1
+      else 0
   in 
     do
       thisGame <- getGameGlobal
@@ -57,6 +65,12 @@ spawnCreepIfNeeded spawn =
         ldHarvesters = creepsAndRoles # mapMaybe (case _ of 
           (Right (LDHarvester b)) -> Just b
           _ -> Nothing)
+        guards = creepsAndRoles # mapMaybe (case _ of 
+          (Right (Guard b)) -> Just b
+          _ -> Nothing)
+        healers = creepsAndRoles # mapMaybe (case _ of 
+          (Right (Healer b)) -> Just b
+          _ -> Nothing)
         maxEnergy = (energyCapacityAvailable (room spawn))
         canCreate = canCreateCreep spawn [part_work, part_work, part_carry, part_move]
       if (canCreate == ok) then
@@ -64,6 +78,12 @@ spawnCreepIfNeeded spawn =
           Nothing -> 
             if (length harvesters < minHarvesters) then
               createBalancedCreep spawn (energyAvailable (room spawn)) (HarvesterMemory {role: HarvesterRole, working: true})
+              >>= logShow
+            else if ((length guards) < minGuards && (energyAvailable (room spawn)) > 300) then
+              createGuard spawn (energyAvailable (room spawn)) (GuardMemory {role: GuardRole})
+              >>= logShow
+            else if ((length healers) < minHealers && (energyAvailable (room spawn)) > 310) then
+              createHealer spawn (energyAvailable (room spawn)) (GuardMemory {role: HealerRole})
               >>= logShow
             else if ((length ldHarvesters) < minLDHarvesters) then
               createLDHarvesterForAdjacentRoom spawn (energyAvailable (room spawn))
@@ -127,6 +147,30 @@ createBalancedCreep spawn energy mem =
     workParts = map (\n -> part_carry) (0..(numberOfParts-1))
     carryParts = map (\n -> part_work) (0..(numberOfParts-1))
     allParts = concat [[part_work], moveParts, workParts, carryParts]
+    noName = Nothing
+  in do
+    spawnCreep spawn allParts noName mem
+
+createHealer :: Spawn -> Int -> CreepMemory -> Effect (Either ReturnCode String)
+createHealer spawn energy mem =
+  let 
+    energyExceptHeal = energy - 250
+    numberOfParts = energyExceptHeal / (60)
+    moveParts = map (\n -> part_move) (0..(numberOfParts-1))
+    toughParts = map (\n -> part_tough) (0..(numberOfParts-1))
+    allParts = concat [toughParts, [part_heal], moveParts]
+    noName = Nothing
+  in do
+    spawnCreep spawn allParts noName mem
+
+createGuard :: Spawn -> Int -> CreepMemory -> Effect (Either ReturnCode String)
+createGuard spawn energy mem =
+  let 
+    energyExceptAttack = energy - 240
+    numberOfParts = energyExceptAttack / (60)
+    moveParts = map (\n -> part_move) (0..(numberOfParts-1))
+    toughParts = map (\n -> part_tough) (0..(numberOfParts-1))
+    allParts = concat [toughParts, [part_attack, part_attack, part_attack], moveParts]
     noName = Nothing
   in do
     spawnCreep spawn allParts noName mem

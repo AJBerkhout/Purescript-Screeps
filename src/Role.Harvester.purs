@@ -5,9 +5,10 @@ import Prelude
 import CreepRoles (Role)
 import Data.Array (head, filter)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), isJust)
 import Effect (Effect)
 import Screeps (err_not_in_range, find_my_structures, find_sources_active, resource_energy)
+import Screeps.Container (toContainer)
 import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, setAllMemory, transferToStructure, upgradeController)
 import Screeps.Extension as Extension
 import Screeps.Game (getGameGlobal)
@@ -56,13 +57,20 @@ runHarvester harvester@{creep, mem} =
       game <- getGameGlobal
       case (head (filter desiredTarget (find (room creep) find_my_structures))) of
         Nothing -> 
-          case (controller (room creep)) of
-            Nothing -> pure unit
-            Just controller -> do
-              upgradeResult <- upgradeController creep controller
-              if upgradeResult == err_not_in_range
-              then moveTo creep (TargetObj controller) # ignoreM
-              else pure unit
+          case (head (filter (\n -> isJust (toContainer n)) (find (room creep) find_my_structures))) of
+          Just container -> do
+            transferResult <- transferToStructure creep container resource_energy
+            if transferResult == err_not_in_range
+            then moveTo creep (TargetObj container) # ignoreM
+            else pure unit
+          Nothing ->
+            case (controller (room creep)) of
+              Nothing -> pure unit
+              Just controller -> do
+                upgradeResult <- upgradeController creep controller
+                if upgradeResult == err_not_in_range
+                then moveTo creep (TargetObj controller) # ignoreM
+                else pure unit
         Just spawn1 -> do
           transferResult <- transferToStructure creep spawn1 resource_energy
           if transferResult == err_not_in_range

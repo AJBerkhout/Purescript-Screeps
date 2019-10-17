@@ -45,7 +45,15 @@ runBuilder builder@{ creep, mem } = do
             then moveTo creep (TargetObj targetSite) # ignoreM
             else pure unit
           _ -> do
-            pure unit
+            do
+              game <- getGameGlobal
+              case (controller (room creep)) of
+                Nothing -> pure unit
+                Just controller -> do
+                  upgradeResult <- upgradeController creep controller
+                  if upgradeResult == err_not_in_range
+                  then moveTo creep (TargetObj controller) # ignoreM
+                  else pure unit
   else do
     case ((amtCarrying creep resource_energy) == (carryCapacity creep)) of
       true -> do
@@ -58,14 +66,6 @@ runBuilder builder@{ creep, mem } = do
             if harvestResult == err_not_in_range
             then moveTo creep (TargetObj targetSource) # ignoreM
             else pure unit
-          _ -> do
-            game <- getGameGlobal
-            case (controller (room creep)) of
-              Nothing -> pure unit
-              Just controller -> do
-                upgradeResult <- upgradeController creep controller
-                if upgradeResult == err_not_in_range
-                then moveTo creep (TargetObj controller) # ignoreM
-                else pure unit
+          _ -> pure unit
 
 

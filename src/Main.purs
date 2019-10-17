@@ -2,23 +2,27 @@ module Main (loop) where
 
 import Prelude
 
+import Construction (setupSpawn)
 import CreepClassification (UnknownCreepType(..), VocationalCreep(..), classifyCreep)
 import CreepSpawning (spawnCreepIfNeeded)
+import Data.Array (length)
 import Data.Either (Either(..))
 import Data.Foldable (for_)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Console (log)
 import Role.Builder (runBuilder)
+import Role.Guard (runGuard)
 import Role.Harvester (runHarvester)
+import Role.Healer (runHealer)
 import Role.LDHarvester (runLDHarvester)
 import Role.Repairer (runRepairer)
 import Role.Upgrader (runUpgrader)
 import Role.WallRepairer (runWallRepairer)
-import Screeps.Constants (find_my_structures)
+import Screeps.Constants (find_hostile_creeps, find_my_structures)
 import Screeps.Defense (runTower)
 import Screeps.Game (creeps, getGameGlobal, spawns)
-import Screeps.Room (find')
+import Screeps.Room (find, find')
 import Screeps.RoomObject (room)
 import Screeps.Tower (toTower)
 import Screeps.Types (Creep, Structure)
@@ -39,6 +43,8 @@ matchUnit (Right (Builder creep)) = runBuilder creep
 matchUnit (Right (LDHarvester creep)) = runLDHarvester creep
 matchUnit (Right (Repairer creep)) = runRepairer creep
 matchUnit (Right (WallRepairer creep)) = runWallRepairer creep
+matchUnit (Right (Healer creep)) = runHealer creep
+matchUnit (Right (Guard creep)) = runGuard creep
 matchUnit (Left (UnknownCreepType err)) = log $ "One of the creeps has a memory I can't parse.\n" <> err
 
 runCreepRole :: Creep -> Effect Unit
@@ -53,11 +59,17 @@ isTower struct =
 
 loop :: Effect Unit
 loop = do
+  
   game <- getGameGlobal
   for_ (spawns game) \spawn -> do
-    let towers = find' (room spawn) find_my_structures isTower
+    do setupSpawn spawn
+    let 
+      towers = find' (room spawn) find_my_structures isTower
+      battleStations = length (find (room spawn) find_hostile_creeps) > 0 
+    log (show battleStations)
+    
     for_ (towers) \n -> do runTower n
-    spawnCreepIfNeeded spawn
+    spawnCreepIfNeeded spawn battleStations
 
   for_ (creeps game) \n -> do
     runCreepRole n

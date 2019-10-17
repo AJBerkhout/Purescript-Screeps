@@ -37,7 +37,7 @@ runRepairer repairer@{ creep, mem } = do
         do
           setMemory repairer (mem { working = false })
       false ->
-        case head (filter (\n -> hits n < hitsMax n && (not isJust (unsafeCast structure_wall n))) (find (room creep) find_structures)) of
+        case head (filter (\n -> hits n < (hitsMax n / 2) && (not isJust (unsafeCast structure_wall n))) (find (room creep) find_structures)) of
           Nothing -> 
             case head (find (room creep) find_construction_sites) of
               Nothing -> do
