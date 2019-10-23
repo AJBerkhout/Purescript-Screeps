@@ -21,6 +21,8 @@ import Role.LDHarvester (LDHarvesterMemory, LDHarvester)
 import Role.Repairer (RepairerMemory, Repairer)
 import Role.Upgrader (UpgraderMemory, Upgrader)
 import Role.WallRepairer (WallRepairerMemory, WallRepairer)
+import Role.Yeeter (YeeterMemory, Yeeter)
+import Role.Yoinker (Yoinker, YoinkerMemory)
 import Screeps.Creep (getAllMemory)
 import Screeps.Spawn (createCreep')
 import Screeps.Types (BodyPartType, Creep, ReturnCode, Spawn)
@@ -34,6 +36,8 @@ data CreepMemory
   | WallRepairerMemory WallRepairerMemory
   | HealerMemory HealerMemory
   | GuardMemory GuardMemory
+  | YoinkerMemory YoinkerMemory
+  | YeeterMemory YeeterMemory
 
 instance encodeCreepMemory :: EncodeJson CreepMemory where
   encodeJson (HarvesterMemory mem) = encodeJson mem
@@ -44,6 +48,8 @@ instance encodeCreepMemory :: EncodeJson CreepMemory where
   encodeJson (WallRepairerMemory mem) = encodeJson mem
   encodeJson (GuardMemory mem) = encodeJson mem
   encodeJson (HealerMemory mem) = encodeJson mem
+  encodeJson (YoinkerMemory mem) = encodeJson mem
+  encodeJson (YeeterMemory mem) = encodeJson mem
 
 instance decodeCreepMemory :: DecodeJson CreepMemory where
   decodeJson json = go
@@ -58,6 +64,8 @@ instance decodeCreepMemory :: DecodeJson CreepMemory where
         | Right (mem@{role: HealerRole}) <- decodeJson json = pure $ HealerMemory mem
         | Right (mem@{role: GuardRole}) <- decodeJson json = pure $ GuardMemory mem
         | Right (mem@{role: WallRepairerRole}) <- decodeJson json = pure $ WallRepairerMemory mem
+        | Right (mem@{role: YeeterRole}) <- decodeJson json = pure $ YeeterMemory mem
+        | Right (mem@{role: YoinkerRole}) <- decodeJson json = pure $ YoinkerMemory mem
         | otherwise = Left $ "Unable to decode creep memory: " <> JSON.stringify json
 
 data VocationalCreep = 
@@ -69,6 +77,8 @@ data VocationalCreep =
   | WallRepairer WallRepairer
   | Healer Healer
   | Guard Guard
+  | Yeeter Yeeter
+  | Yoinker Yoinker
 
 newtype UnknownCreepType = UnknownCreepType String
 
@@ -84,6 +94,8 @@ classifyCreep creep = do
     Right (WallRepairerMemory w) -> pure $ Right $ WallRepairer {creep, mem: w}
     Right (HealerMemory h) -> pure $ Right $ Healer {creep, mem: h}
     Right (GuardMemory g) -> pure $ Right $ Guard {creep, mem: g}
+    Right (YeeterMemory g) -> pure $ Right $ Yeeter {creep, mem: g}
+    Right (YoinkerMemory g) -> pure $ Right $ Yoinker {creep, mem: g}
     Left err -> pure $ Left $ UnknownCreepType $ "couldn't classify creep with memory: " <> JSON.stringify mem <> ". " <> err
 
 spawnCreep :: Spawn -> Array BodyPartType -> Maybe String -> CreepMemory -> Effect (Either ReturnCode String)

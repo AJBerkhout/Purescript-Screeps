@@ -16,6 +16,8 @@ data Role
   | WallRepairerRole
   | HealerRole
   | GuardRole
+  | YeeterRole
+  | YoinkerRole
 
 instance showRole :: Show Role where
   show HarvesterRole = "harvester"
@@ -26,6 +28,8 @@ instance showRole :: Show Role where
   show WallRepairerRole = "wallrepairer"
   show HealerRole = "healer"
   show GuardRole = "guard"
+  show YeeterRole = "yeeter"
+  show YoinkerRole = "yoinker"
 
 instance decodeRole :: DecodeJson Role where
   decodeJson json = ans
@@ -39,6 +43,8 @@ instance decodeRole :: DecodeJson Role where
         | jsonStr == (Just $ show WallRepairerRole) = Right WallRepairerRole
         | jsonStr == (Just $ show HealerRole) = Right HealerRole
         | jsonStr == (Just $ show GuardRole) = Right GuardRole
+        | jsonStr == (Just $ show YeeterRole) = Right YeeterRole
+        | jsonStr == (Just $ show YoinkerRole) = Right YoinkerRole
         | otherwise = Left $ "unable to parse json as role:\n" <> JSON.stringify json
       
       jsonStr = JSON.toString json
@@ -52,4 +58,6 @@ instance encodeRole :: EncodeJson Role where
   encodeJson WallRepairerRole = JSON.fromString $ show WallRepairerRole
   encodeJson HealerRole = JSON.fromString $ show HealerRole
   encodeJson GuardRole = JSON.fromString $ show GuardRole
+  encodeJson YeeterRole = JSON.fromString $ show YeeterRole
+  encodeJson YoinkerRole = JSON.fromString $ show YoinkerRole
 

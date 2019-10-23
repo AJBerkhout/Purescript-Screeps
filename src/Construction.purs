@@ -26,7 +26,6 @@ setupSpawn spawn =
       in do
       x <- 
         (for_ sources \source -> do
-        log "setting up road"
         setupRoad (room spawn) spawn source)
       case (controller (room spawn)) of
         Just c -> setupRoad (room spawn) spawn c
