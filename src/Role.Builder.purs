@@ -7,8 +7,8 @@ import Data.Array (head)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), isJust)
 import Effect (Effect)
-import Screeps (err_not_in_range, find_construction_sites, find_sources_active, resource_energy)
-import Screeps.Container (toContainer)
+import Screeps (err_not_in_range, find_construction_sites, find_sources_active, resource_energy, structure_container)
+import Screeps.ConstructionSite (structureType)
 import Screeps.Creep (amtCarrying, build, carryCapacity, harvestSource, moveTo, setAllMemory, upgradeController)
 import Screeps.Game (getGameGlobal)
 import Screeps.Room (controller, find, find')
@@ -39,7 +39,7 @@ runBuilder builder@{ creep, mem } = do
           setMemory builder (mem { working = false })
       false -> 
         let 
-          cont = head (find' (room creep) find_construction_sites (\n -> isJust (toContainer n)))
+          cont = head (find' (room creep) find_construction_sites (\n -> structureType n == structure_container))
         in
           case cont of
             Just c -> do
