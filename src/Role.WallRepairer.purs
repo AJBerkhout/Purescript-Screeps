@@ -9,8 +9,8 @@ import Data.Int (toNumber)
 import Data.Maybe (Maybe(..), isJust)
 import Effect (Effect)
 import Screeps (err_not_in_range, find_construction_sites, find_sources_active, find_structures, resource_energy, structure_wall)
-import Screeps.Creep (amtCarrying, build, carryCapacity, harvestSource, moveTo, repair, setAllMemory)
-import Screeps.Room (find)
+import Screeps.Creep (amtCarrying, build, carryCapacity, harvestSource, moveTo, repair, setAllMemory, transferToStructure)
+import Screeps.Room (controller, find)
 import Screeps.RoomObject (pos, room)
 import Screeps.RoomPosition (findClosestByPath)
 import Screeps.Structure (hits, hitsMax, unsafeCast)
@@ -42,7 +42,14 @@ runWallRepairer repairer@{ creep, mem } = do
           Nothing -> 
             case head (find (room creep) find_construction_sites) of
               Nothing -> do
-                pure unit
+                case controller (room creep) of
+                  Just c -> do
+                    transferResult <- transferToStructure creep c resource_energy
+                    if transferResult == err_not_in_range
+                    then moveTo creep (TargetObj c) # ignoreM
+                    else pure unit
+                  Nothing -> 
+                    pure unit
               Just targetSite -> do
                 buildResult <- build creep targetSite
                 if buildResult == err_not_in_range 

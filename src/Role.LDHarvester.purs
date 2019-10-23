@@ -10,7 +10,7 @@ import Effect (Effect)
 import Screeps (err_not_in_range, find_my_structures, find_sources, find_sources_active, resource_energy)
 import Screeps.Creep (amtCarrying, carryCapacity, harvestSource, moveTo, setAllMemory, transferToStructure)
 import Screeps.Extension as Extension
-import Screeps.Room (RoomIdentifier(..), find, findExitTo, name)
+import Screeps.Room (RoomIdentifier(..), controller, find, findExitTo, name)
 import Screeps.RoomObject (pos, room)
 import Screeps.RoomPosition (findClosestByPath, findClosestByRange)
 import Screeps.Spawn as Spawn
@@ -53,7 +53,15 @@ runLDHarvester ld@{ creep, mem } =
         case (name (room creep) == mem.home) of
           true ->
             case (head (filter desiredTarget (find (room creep) find_my_structures))) of
-              Nothing -> pure unit
+              Nothing -> 
+                case (controller (room creep)) of
+                  Just c -> do
+                    transferResult <- transferToStructure creep c resource_energy
+                    if transferResult == err_not_in_range
+                    then moveTo creep (TargetObj c) # ignoreM
+                    else pure unit
+                  Nothing ->
+                    pure unit
               Just spawn1 -> do
                 transferResult <- transferToStructure creep spawn1 resource_energy
                 if transferResult == err_not_in_range
