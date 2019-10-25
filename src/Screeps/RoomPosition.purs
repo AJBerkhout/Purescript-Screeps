@@ -3,7 +3,7 @@ module Screeps.RoomPosition where
 
 import Prelude
 
-import Data.Either (Either)
+import Data.Either (Either, hush)
 import Data.Maybe (Maybe(Nothing))
 import Effect (Effect)
 import Effect.Exception (Error, try)
@@ -14,8 +14,8 @@ import Unsafe.Coerce (unsafeCoerce)
 
 foreign import mkRoomPosition :: Int -> Int -> String -> RoomPosition
 
-type ClosestPathOptions = PathOptions
-  ( filter :: Maybe (forall a. a -> Boolean)
+type ClosestPathOptions a = PathOptions
+  ( filter :: Maybe (a -> Boolean)
   , algorithm :: Maybe FindAlgorithm )
 
 newtype FindAlgorithm = FindAlgorithm String
@@ -26,7 +26,7 @@ algorithmAstar = FindAlgorithm "astar"
 algorithmDijkstra :: FindAlgorithm
 algorithmDijkstra = FindAlgorithm "dijkstra"
 
-closestPathOpts :: ClosestPathOptions
+closestPathOpts :: forall a. ClosestPathOptions a
 closestPathOpts =
   { ignoreCreeps: Nothing
   , ignoreDestructibleStructures: Nothing
@@ -70,19 +70,29 @@ createFlagWithColor pos name color = runThisEffFn2 "createFlag" pos name color
 createFlagWithColors :: RoomPosition -> String -> Color -> Color -> Effect ReturnCode
 createFlagWithColors pos name color secondaryColor = runThisEffFn3 "createFlag" pos name color secondaryColor
 
-findClosestByPath :: forall a. RoomPosition -> FindContext a -> Effect (Either Error (Maybe a))
-findClosestByPath pos ctx = try (toMaybe <$> runThisEffFn1 "findClosestByPath" pos (unwrapContext ctx))
+findClosestByPath :: forall a. RoomPosition -> FindContext a -> Effect (Maybe a)
+findClosestByPath pos ctx = do
+  result <- try (runThisEffFn1 "findClosestByPath" pos (unwrapContext ctx))
+  pure (hush result >>= toMaybe)
 
-findClosestByPath' :: forall a. RoomPosition -> FindContext a -> ClosestPathOptions -> Effect (Either Error (Maybe a))
-findClosestByPath' pos ctx opts = try (toMaybe <$> runThisEffFn2 "findClosestByPath" pos ctx' options)
-  where ctx' = unwrapContext ctx
-        options = selectMaybes opts
+findClosestByPath' :: forall a. RoomPosition -> FindContext a -> ClosestPathOptions a -> Effect (Maybe a)
+findClosestByPath' pos ctx opts = do
+  result <- try (runThisEffFn2 "findClosestByPath" pos ctx' options)
+  pure (hush result >>= toMaybe)
 
-findClosestByRange :: forall a. RoomPosition -> FindContext a -> Effect (Either Error (Maybe a))
-findClosestByRange pos ctx = try (toMaybe <$> runThisEffFn1 "findClosestByRange" pos (unwrapContext ctx))
+  where 
+    ctx' = unwrapContext ctx
+    options = selectMaybes opts
 
-findClosestByRange' :: forall a. RoomPosition -> FindContext a -> FilterFn a -> Effect (Either Error (Maybe a))
-findClosestByRange' pos ctx filter = try (toMaybe <$> runThisEffFn2 "findClosestByRange" pos (unwrapContext ctx) { filter })
+findClosestByRange :: forall a. RoomPosition -> FindContext a -> Effect (Maybe a)
+findClosestByRange pos ctx = do
+  result <- try (runThisEffFn1 "findClosestByRange" pos (unwrapContext ctx))
+  pure (hush result >>= toMaybe)
+  
+findClosestByRange' :: forall a. RoomPosition -> FindContext a -> FilterFn a -> Effect (Maybe a)
+findClosestByRange' pos ctx filter = do
+  result <- try (runThisEffFn2 "findClosestByRange" pos (unwrapContext ctx) { filter })
+  pure (hush result >>= toMaybe)
 
 findInRange :: forall a. RoomPosition -> FindContext a -> Int -> Effect (Either Error (Array a))
 findInRange pos ctx range = try (runThisEffFn2 "findInRange" pos (unwrapContext ctx) range)
