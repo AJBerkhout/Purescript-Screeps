@@ -1,16 +1,14 @@
 module Screeps.Defense where
 
 import Prelude
-
-import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Screeps (find_hostile_creeps, find_my_structures)
+import Screeps (find_hostile_creeps)
 import Screeps.RoomObject (pos)
-import Screeps.RoomPosition (findClosestByRange, findClosestByRange')
+import Screeps.RoomPosition (findClosestByRange)
 import Screeps.Structure (hits, hitsMax)
-import Screeps.Tower (attack, repair)
-import Screeps.Types (FindContext(..), OwnedStructure, RawOwnedStructure, RawRoomObject, RawStructure, RawTower, Structure, Tower)
+import Screeps.Tower (attack)
+import Screeps.Types (FindContext(..), RawOwnedStructure, RawRoomObject, RawStructure, RawTower, Structure)
 
 damaged :: forall a. Structure a -> Boolean
 damaged struct = 
@@ -25,11 +23,7 @@ runTower tower = do
   let roomPos = pos tower 
   closestHostile <- findClosestByRange roomPos (OfType find_hostile_creeps)
   case closestHostile of 
-    Left e -> pure unit
-    Right maybeEnemy ->
-      case maybeEnemy of
-        Just enemy -> do
-          code <- attack tower enemy
-          pure unit
-        Nothing -> 
-          pure unit
+    Nothing -> pure unit
+    Just enemy -> do
+      code <- attack tower enemy
+      pure unit

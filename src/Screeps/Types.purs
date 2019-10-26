@@ -38,6 +38,8 @@ type Terminal = OwnedStructure RawTerminal
 type Tower = OwnedStructure RawTower
 type Wall = OwnedStructure RawWall
 
+type Ruin = Structure RawRuin
+
 type ConstructionSite = RoomObject RawConstructionSite
 type Creep = RoomObject RawCreep
 type Flag = RoomObject RawFlag
@@ -45,6 +47,7 @@ type Mineral = RoomObject RawMineral
 type Nuke = RoomObject RawNuke
 type Resource = RoomObject RawResource
 type Source = RoomObject RawSource
+
 
 foreign import data RawOwnedStructure :: Type -> Type
 foreign import data RawRoomObject :: Type -> Type
@@ -69,6 +72,8 @@ foreign import data RawStorage :: Type
 foreign import data RawTerminal :: Type
 foreign import data RawTower :: Type
 foreign import data RawWall :: Type
+
+foreign import data RawRuin :: Type
 
 foreign import data RawConstructionSite :: Type
 foreign import data RawCreep :: Type

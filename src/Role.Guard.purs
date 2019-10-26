@@ -3,7 +3,6 @@ module Role.Guard (runGuard, GuardMemory, Guard) where
 import Prelude
 import CreepRoles (Role)
 import Data.Array (head)
-import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Screeps (err_not_in_range, find_hostile_creeps, find_my_spawns)
@@ -35,7 +34,7 @@ runGuard guard@{creep, mem} =
       Just spawn -> do
         closestHostile <- findClosestByRange (pos spawn) (OfType find_hostile_creeps)
         case closestHostile of
-          Right (Just enemy) -> do
+          Just enemy -> do
             attackResult <- attackCreep creep enemy
             if attackResult == err_not_in_range then
               moveTo creep (TargetObj enemy) # ignoreM
@@ -46,7 +45,7 @@ runGuard guard@{creep, mem} =
       Nothing -> do
         closestHostile <- findClosestByRange (pos creep) (OfType find_hostile_creeps)
         case closestHostile of
-          Right (Just enemy) -> do
+          Just enemy -> do
             attackResult <- attackCreep creep enemy
             if attackResult == err_not_in_range then
               moveTo creep (TargetObj enemy) # ignoreM

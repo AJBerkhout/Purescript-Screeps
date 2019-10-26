@@ -88,7 +88,7 @@ findClosestByRange :: forall a. RoomPosition -> FindContext a -> Effect (Maybe a
 findClosestByRange pos ctx = do
   result <- try (runThisEffFn1 "findClosestByRange" pos (unwrapContext ctx))
   pure (hush result >>= toMaybe)
-  
+
 findClosestByRange' :: forall a. RoomPosition -> FindContext a -> FilterFn a -> Effect (Maybe a)
 findClosestByRange' pos ctx filter = do
   result <- try (runThisEffFn2 "findClosestByRange" pos (unwrapContext ctx) { filter })

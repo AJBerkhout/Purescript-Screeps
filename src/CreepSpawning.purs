@@ -9,13 +9,13 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Traversable (for)
 import Effect (Effect)
-import Effect.Class.Console (log, logShow)
-import Screeps.Constants (find_sources, part_attack, part_carry, part_heal, part_move, part_tough, part_work)
+import Effect.Class.Console (logShow)
+import Screeps.Constants (find_sources, ok, part_attack, part_carry, part_heal, part_move, part_tough, part_work)
 import Screeps.Game (creeps, getGameGlobal)
 import Screeps.Map (getAdjacentRooms)
 import Screeps.Room (energyAvailable, energyCapacityAvailable, find, name)
 import Screeps.RoomObject (room)
-import Screeps.Spawn (spawning)
+import Screeps.Spawn (canCreateCreep, spawning)
 import Screeps.Types (ReturnCode, Spawn)
 
 ignore :: forall a. a -> Unit
@@ -27,12 +27,12 @@ ignoreM m = m <#> ignore
 spawnCreepIfNeeded :: Spawn -> Boolean -> Effect Unit
 spawnCreepIfNeeded spawn battleStations =
   let 
-    minHarvesters = 1
-    minUpgraders = 2
+    minHarvesters = 0
+    minUpgraders = 4
     minBuilders = 1
     minRepairers = 1
-    minWallRepairers = 1
-    minLDHarvesters = 3
+    minWallRepairers = 0
+    minLDHarvesters = 0
     minHealers = 
       if battleStations then 
         1
@@ -79,7 +79,7 @@ spawnCreepIfNeeded spawn battleStations =
           (Right (Yoinker b)) -> Just b
           _ -> Nothing)
         maxEnergy = (energyCapacityAvailable (room spawn))
-      if maxEnergy / 2 < (energyAvailable (room spawn)) then
+      if canCreateCreep spawn [part_move, part_work, part_work, part_carry] == ok then
         case (spawning spawn) of
           Nothing -> 
             if (length harvesters < minHarvesters) then
@@ -91,7 +91,7 @@ spawnCreepIfNeeded spawn battleStations =
             else if ((length healers) < minHealers && (energyAvailable (room spawn)) >= 310) then
               createHealer spawn (energyAvailable (room spawn)) (GuardMemory {role: HealerRole})
               >>= logShow
-            else if ((length ldHarvesters) < minLDHarvesters) then
+            else if ((length ldHarvesters) < minLDHarvesters && (energyAvailable (room spawn) >= 300)) then
               createLDHarvesterForAdjacentRoom spawn (energyAvailable (room spawn))
             else if ((length builders) < minBuilders) then
               createBalancedCreep spawn (energyAvailable (room spawn)) (BuilderMemory {role: BuilderRole, working: true})
@@ -143,12 +143,12 @@ createLDHarvesterForAdjacentRoom spawn energy =
     allParts = concat [workParts, moveParts, carryParts]
   in 
     do
-      case adjRooms.topRoom of
+      case adjRooms.leftRoom of
         Just targetRoom ->
           spawnCreep spawn allParts noName (LDHarvesterMemory {role: LDHarvesterRole, home: (name (room spawn)), targetRoom, working:true})
           >>= logShow
         Nothing ->
-          case adjRooms.leftRoom of
+          case adjRooms.topRoom of
             Just targetRoom ->
               spawnCreep spawn allParts noName (LDHarvesterMemory {role: LDHarvesterRole, home: (name (room spawn)), targetRoom, working:true})
               >>= logShow
