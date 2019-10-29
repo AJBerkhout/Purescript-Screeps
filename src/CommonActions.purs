@@ -53,7 +53,7 @@ isNonEmptyContainer :: Structure Unit -> Boolean
 isNonEmptyContainer struct =
   case toStorage struct of
     Just storage ->
-      Storage.storeGet storage resource_energy > 0
+      Storage.storeGet storage resource_energy > 10000
     Nothing ->
       case toContainer struct of
         Just container ->
