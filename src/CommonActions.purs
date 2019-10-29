@@ -13,12 +13,12 @@ import Data.Foldable (any)
 import Data.Int (toNumber)
 import Data.Maybe (Maybe(..), isJust, isNothing)
 import Effect (Effect)
-import Screeps (err_not_in_range, find_my_construction_sites, find_my_spawns, find_my_structures, find_ruins, find_sources_active, part_work, resource_energy)
-import Screeps.Container (toContainer)
-import Screeps.Container as Container
+import Screeps (err_not_in_range, find_my_construction_sites, find_my_spawns, find_my_structures, find_ruins, find_sources_active, find_structures, part_work, resource_energy)
+import Screeps.Container (storeCapacity, storeGet, toContainer)
 import Screeps.Creep (body, build, harvestSource, moveTo, repair, transferToStructure, upgradeController, withdraw)
 import Screeps.Extension (toExtension)
 import Screeps.Extension as Extension
+import Screeps.Rampart (toRampart)
 import Screeps.Room (controller, find)
 import Screeps.RoomObject (pos, room)
 import Screeps.RoomPosition (closestPathOpts, findClosestByPath, findClosestByPath')
@@ -49,11 +49,17 @@ upgrade creep =
       else pure unit
     Nothing -> pure unit
  
-isContainer :: (forall a. Structure a) -> Boolean
-isContainer struct 
-  | Just container <- toContainer struct =  (Container.storeGet container resource_energy) > 0
-  | Just storage <- toStorage struct = Storage.storeGet storage resource_energy > 0
-  | otherwise = false 
+isNonEmptyContainer :: Structure Unit -> Boolean
+isNonEmptyContainer struct =
+  case toStorage struct of
+    Just storage ->
+      Storage.storeGet storage resource_energy > 0
+    Nothing ->
+      case toContainer struct of
+        Just container ->
+          storeGet container resource_energy > storeCapacity container / 2
+        Nothing ->
+          false
 
 collectEnergy :: Creep -> Boolean -> Effect Unit
 collectEnergy creep useContainers = do
@@ -66,34 +72,25 @@ collectEnergy creep useContainers = do
       then creep `moveTo` (TargetObj ruin) # ignoreM
       else pure unit
     Nothing -> do
-      if useContainers then do
-        closestContainer <- findClosestByPath' (pos creep) (OfType find_my_structures) (closestPathOpts {ignoreCreeps = Just true, filter = Just isContainer})
-        case closestContainer of
-          Just (c :: forall a. Structure a) -> do
-            r <- withdraw creep c resource_energy
-            if r == err_not_in_range
-            then moveTo creep (TargetObj c) # ignoreM
-            else pure unit
-          Nothing -> do
-            closestSource <- findClosestByPath' (pos creep) (OfType find_sources_active) (closestPathOpts)
-            case closestSource of
-              Nothing -> do
-                pure unit
-              Just targetSource -> do
-                harvestResult <- harvestSource creep targetSource
-                if harvestResult == err_not_in_range
-                then moveTo creep (TargetObj targetSource) # ignoreM
+      closestSource <- findClosestByPath' (pos creep) (OfType find_sources_active) (closestPathOpts)
+      case closestSource of
+        Just targetSource -> do
+          harvestResult <- harvestSource creep targetSource
+          if harvestResult == err_not_in_range
+          then moveTo creep (TargetObj targetSource) # ignoreM
+          else pure unit
+        Nothing -> do
+          if useContainers then do
+            closestContainer <- findClosestByPath' (pos creep) (OfType find_structures) (closestPathOpts {filter = Just isNonEmptyContainer})
+            case closestContainer of
+              Just (c :: Structure Unit) -> do
+                r <- withdraw creep c resource_energy
+                if r == err_not_in_range
+                then moveTo creep (TargetObj c) # ignoreM
                 else pure unit
-      else do 
-        closestSource <- findClosestByPath' (pos creep) (OfType find_sources_active) (closestPathOpts)
-        case closestSource of
-          Nothing -> do
+              Nothing -> do pure unit
+          else do 
             pure unit
-          Just targetSource -> do
-            harvestResult <- harvestSource creep targetSource
-            if harvestResult == err_not_in_range
-            then moveTo creep (TargetObj targetSource) # ignoreM
-            else pure unit
 
 desiredTarget :: (forall a. Structure a) -> Boolean
 desiredTarget struct
@@ -132,19 +129,22 @@ buildStructure creep = do
       then moveTo creep (TargetObj targetSite) # ignoreM
       else pure unit
 
-isDamagedAndIsntWall :: Boolean -> (forall a. Structure a) -> Boolean
-isDamagedAndIsntWall repairWalls struct = 
+isDamagedAndIsTarget :: Boolean -> (forall a. Structure a) -> Boolean
+isDamagedAndIsTarget repairWalls struct = 
   if (repairWalls) then
     if (isJust (toWall struct) && (toNumber (hits struct) / toNumber (hitsMax struct)) < 0.0003) then
       true
     else
-      hits struct < (hitsMax struct / 2)
+      if (isJust (toRampart struct) && (toNumber (hits struct) / toNumber (hitsMax struct)) < 0.0003) then
+        true
+      else  
+        hits struct < (hitsMax struct / 2)
   else 
-    (isNothing (toWall struct)) && hits struct < (hitsMax struct / 2)
+    (isNothing (toWall struct)) && (isNothing (toRampart struct)) && hits struct < (hitsMax struct / 2)
 
 repairStructure :: Creep -> Boolean -> Effect Unit
 repairStructure creep repairWalls = do
-  struct <- findClosestByPath' (pos creep) (OfType find_my_structures) (closestPathOpts {filter = Just (isDamagedAndIsntWall repairWalls)}) 
+  struct <- findClosestByPath' (pos creep) (OfType find_my_structures) (closestPathOpts {filter = Just (isDamagedAndIsTarget repairWalls)}) 
   case struct of
     Nothing -> 
       buildStructure creep

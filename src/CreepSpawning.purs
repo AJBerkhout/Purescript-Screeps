@@ -28,10 +28,10 @@ spawnCreepIfNeeded :: Spawn -> Boolean -> Effect Unit
 spawnCreepIfNeeded spawn battleStations =
   let 
     minHarvesters = 0
-    minUpgraders = 4
-    minBuilders = 1
+    minUpgraders = 2
+    minBuilders = 2
     minRepairers = 1
-    minWallRepairers = 0
+    minWallRepairers = 2
     minLDHarvesters = 0
     minHealers = 
       if battleStations then 

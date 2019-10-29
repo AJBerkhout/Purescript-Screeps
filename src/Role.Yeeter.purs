@@ -7,7 +7,7 @@ import CreepRoles (Role)
 import Data.Array (head)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Screeps (err_not_in_range, find_dropped_resources, find_my_structures, resource_energy)
+import Screeps (err_not_in_range, find_dropped_resources, find_my_structures, find_structures, resource_energy)
 import Screeps.Container (storeGet, toContainer)
 import Screeps.Creep (amtCarrying, carryCapacity, moveTo, pickup, setAllMemory, withdraw)
 import Screeps.Room (find')
@@ -49,9 +49,10 @@ runYeeter yeeter@{ creep, mem } =
                   moveTo creep (TargetObj e) # ignoreM
                 else
                   pure unit
-              Nothing -> 
-                case head (find' (room creep) find_my_structures isNonEmptyContainer) of
-                  Just (container :: forall a. Structure a) -> do
+              Nothing -> do
+                c <- findClosestByPath' (pos creep) (OfType find_structures) (closestPathOpts {ignoreCreeps = Just true, filter = Just isNonEmptyContainer})
+                case c of
+                  Just (container :: Structure Unit) -> do
                     code <- withdraw creep container resource_energy
                     if code == err_not_in_range then
                       moveTo creep (TargetObj container) # ignoreM

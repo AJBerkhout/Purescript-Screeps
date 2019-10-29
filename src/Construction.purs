@@ -18,7 +18,7 @@ setupSpawn :: Spawn -> Effect Unit
 setupSpawn spawn = 
   let 
     anySites = length (find (room spawn) find_my_construction_sites) > 0
-    anyRoads = length (find' (room spawn) find_my_structures (\n ->isJust (toRoad n))) > 0
+    anyRoads = true
   in
     if (not (anySites || anyRoads)) then
       let 
