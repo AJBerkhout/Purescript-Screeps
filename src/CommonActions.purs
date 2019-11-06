@@ -129,7 +129,7 @@ buildStructure creep = do
       then moveTo creep (TargetObj targetSite) # ignoreM
       else pure unit
 
-isDamagedAndIsTarget :: Boolean -> (forall a. Structure a) -> Boolean
+isDamagedAndIsTarget :: forall a. Boolean -> Structure a -> Boolean
 isDamagedAndIsTarget repairWalls struct = 
   if (repairWalls) then
     if (isJust (toWall struct) && (toNumber (hits struct) / toNumber (hitsMax struct)) < 0.0003) then
@@ -144,11 +144,11 @@ isDamagedAndIsTarget repairWalls struct =
 
 repairStructure :: Creep -> Boolean -> Effect Unit
 repairStructure creep repairWalls = do
-  struct <- findClosestByPath' (pos creep) (OfType find_my_structures) (closestPathOpts {filter = Just (isDamagedAndIsTarget repairWalls)}) 
+  struct <- findClosestByPath' (pos creep) (OfType find_structures) (closestPathOpts {filter = Just (isDamagedAndIsTarget repairWalls)}) 
   case struct of
     Nothing -> 
       buildStructure creep
-    Just (damagedBuilding :: forall a. Structure a) -> do
+    Just damagedBuilding -> do
       repairResult <- repair creep damagedBuilding
       if repairResult == err_not_in_range then
         moveTo creep (TargetObj damagedBuilding) # ignoreM

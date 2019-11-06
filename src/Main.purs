@@ -12,6 +12,7 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Console (log)
 import Role.Builder (runBuilder)
+import Role.Claimer (runClaimer)
 import Role.Guard (runGuard)
 import Role.Harvester (runHarvester)
 import Role.Healer (runHealer)
@@ -49,6 +50,7 @@ matchUnit (Right (Healer creep)) = runHealer creep
 matchUnit (Right (Guard creep)) = runGuard creep
 matchUnit (Right (Yeeter creep)) = runYeeter creep
 matchUnit (Right (Yoinker creep)) = runYoinker creep
+matchUnit (Right (Claimer creep)) = runClaimer creep
 matchUnit (Left (UnknownCreepType err)) = log $ "One of the creeps has a memory I can't parse.\n" <> err
 
 runCreepRole :: Creep -> Effect Unit

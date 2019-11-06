@@ -14,6 +14,7 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe)
 import Effect (Effect)
 import Role.Builder (BuilderMemory, Builder)
+import Role.Claimer (ClaimerMemory, Claimer)
 import Role.Guard (GuardMemory, Guard)
 import Role.Harvester (HarvesterMemory, Harvester)
 import Role.Healer (HealerMemory, Healer)
@@ -38,6 +39,7 @@ data CreepMemory
   | GuardMemory GuardMemory
   | YoinkerMemory YoinkerMemory
   | YeeterMemory YeeterMemory
+  | ClaimerMemory ClaimerMemory
 
 instance encodeCreepMemory :: EncodeJson CreepMemory where
   encodeJson (HarvesterMemory mem) = encodeJson mem
@@ -50,6 +52,7 @@ instance encodeCreepMemory :: EncodeJson CreepMemory where
   encodeJson (HealerMemory mem) = encodeJson mem
   encodeJson (YoinkerMemory mem) = encodeJson mem
   encodeJson (YeeterMemory mem) = encodeJson mem
+  encodeJson (ClaimerMemory mem) = encodeJson mem
 
 instance decodeCreepMemory :: DecodeJson CreepMemory where
   decodeJson json = go
@@ -66,6 +69,7 @@ instance decodeCreepMemory :: DecodeJson CreepMemory where
         | Right (mem@{role: WallRepairerRole}) <- decodeJson json = pure $ WallRepairerMemory mem
         | Right (mem@{role: YeeterRole}) <- decodeJson json = pure $ YeeterMemory mem
         | Right (mem@{role: YoinkerRole}) <- decodeJson json = pure $ YoinkerMemory mem
+        | Right (mem@{role: ClaimerRole}) <- decodeJson json = pure $ ClaimerMemory mem
         | otherwise = Left $ "Unable to decode creep memory: " <> JSON.stringify json
 
 data VocationalCreep = 
@@ -79,6 +83,7 @@ data VocationalCreep =
   | Guard Guard
   | Yeeter Yeeter
   | Yoinker Yoinker
+  | Claimer Claimer
 
 newtype UnknownCreepType = UnknownCreepType String
 
@@ -96,6 +101,7 @@ classifyCreep creep = do
     Right (GuardMemory g) -> pure $ Right $ Guard {creep, mem: g}
     Right (YeeterMemory g) -> pure $ Right $ Yeeter {creep, mem: g}
     Right (YoinkerMemory g) -> pure $ Right $ Yoinker {creep, mem: g}
+    Right (ClaimerMemory c) -> pure $ Right $ Claimer {creep, mem: c}
     Left err -> pure $ Left $ UnknownCreepType $ "couldn't classify creep with memory: " <> JSON.stringify mem <> ". " <> err
 
 spawnCreep :: Spawn -> Array BodyPartType -> Maybe String -> CreepMemory -> Effect (Either ReturnCode String)

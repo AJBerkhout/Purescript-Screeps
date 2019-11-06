@@ -131,6 +131,41 @@ spawnCreepIfNeeded spawn battleStations =
             pure unit
     else do pure unit
 
+createClaimerForAdjacentRoom :: Spawn -> Int -> Effect Unit
+createClaimerForAdjacentRoom spawn energy = 
+  let 
+    noName = Nothing
+    adjRooms = getAdjacentRooms (name (room spawn))
+    workParts = [part_work, part_work]
+    numberOtherParts = (energy - 200) / 100
+    moveParts = map (\n -> part_move) (0..(numberOtherParts-1))
+    carryParts = map (\n -> part_carry) (0..(numberOtherParts-1))
+    allParts = concat [workParts, moveParts, carryParts]
+  in 
+    do
+      case adjRooms.leftRoom of
+        Just targetRoom ->
+          spawnCreep spawn allParts noName (ClaimerMemory {role: ClaimerRole, homeRoom: (name (room spawn)), targetRoom})
+          >>= logShow
+        Nothing ->
+          case adjRooms.topRoom of
+            Just targetRoom ->
+              spawnCreep spawn allParts noName (ClaimerMemory {role: ClaimerRole, homeRoom: (name (room spawn)), targetRoom})
+              >>= logShow
+            Nothing ->
+              case adjRooms.rightRoom of
+                Just targetRoom ->
+                  spawnCreep spawn allParts noName (ClaimerMemory {role: ClaimerRole, homeRoom: (name (room spawn)), targetRoom})
+                  >>= logShow
+                Nothing ->
+                  case adjRooms.bottomRoom of
+                    Just targetRoom ->
+                      spawnCreep spawn allParts noName (ClaimerMemory {role: ClaimerRole, homeRoom: (name (room spawn)), targetRoom})
+                      >>= logShow
+                    Nothing ->
+                      pure unit
+
+
 createLDHarvesterForAdjacentRoom :: Spawn -> Int -> Effect Unit
 createLDHarvesterForAdjacentRoom spawn energy =
   let 
@@ -181,10 +216,10 @@ createHealer :: Spawn -> Int -> CreepMemory -> Effect (Either ReturnCode String)
 createHealer spawn energy mem =
   let 
     energyExceptHeal = energy - 250
-    numberOfParts = energyExceptHeal / (60)
+    numberOfParts = energyExceptHeal / (80)
     moveParts = map (\n -> part_move) (0..(numberOfParts-1))
     toughParts = map (\n -> part_tough) (0..(numberOfParts-1))
-    allParts = concat [toughParts, [part_heal], moveParts]
+    allParts = concat [toughParts, toughParts, toughParts, [part_heal], moveParts]
     noName = Nothing
   in do
     spawnCreep spawn allParts noName mem
@@ -193,10 +228,10 @@ createGuard :: Spawn -> Int -> CreepMemory -> Effect (Either ReturnCode String)
 createGuard spawn energy mem =
   let 
     energyExceptAttack = energy - 240
-    numberOfParts = energyExceptAttack / (60)
+    numberOfParts = energyExceptAttack / (80)
     moveParts = map (\n -> part_move) (0..(numberOfParts-1))
     toughParts = map (\n -> part_tough) (0..(numberOfParts-1))
-    allParts = concat [toughParts, [part_attack, part_attack, part_attack], moveParts]
+    allParts = concat [toughParts, toughParts, toughParts, [part_attack, part_attack, part_attack], moveParts]
     noName = Nothing
   in do
     spawnCreep spawn allParts noName mem
@@ -215,7 +250,11 @@ createYeeter spawn energy mem =
 createYoinker :: Spawn -> Int -> CreepMemory -> Effect (Either ReturnCode String)
 createYoinker spawn energy mem =
   let 
-    numberOfParts = (energy - 50) / 100
+    maxNumberOfParts = (energy - 50) / 100
+    numberOfParts = 
+      case maxNumberOfParts >= 6 of
+        true -> 6
+        false -> maxNumberOfParts
     workParts = map (\n -> part_work) (0..(numberOfParts-1))
     allParts = concat [[part_move], workParts]
     noName = Nothing
