@@ -42,6 +42,7 @@ exports.find_hostile_construction_sites = FIND_HOSTILE_CONSTRUCTION_SITES;
 exports.find_minerals = FIND_MINERALS;
 exports.find_nukes = FIND_NUKES;
 exports.find_ruins = FIND_RUINS;
+exports.find_tombstones = FIND_TOMBSTONES;
 
 exports.top = TOP;
 exports.top_right = TOP_RIGHT;
