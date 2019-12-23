@@ -1,39 +1,82 @@
-module Role.Harvester (runHarvester, HarvesterMemory, Harvester) where
+module Role.Harvester 
+  (runHarvester
+  , Job(..)
+  , HarvesterMemory
+  , Harvester
+  , constructionPlans) where
 
 import Prelude
 
-import CommonActions (collectEnergy, transport)
 import CreepRoles (Role)
+import CreepTasks (buildNextConstructionSite, deliverToClosestStructure, harvestEnergy, upgradeNearestController)
+import Data.Argonaut (class DecodeJson, class EncodeJson, fromString, stringify, toString)
+import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
-import Screeps (resource_energy)
-import Screeps.Creep (amtCarrying, carryCapacity, setAllMemory)
-import Screeps.Types (Creep)
+import Screeps (part_carry, part_move, part_work, resource_energy)
+import Screeps.Creep (amtCarrying, carryCapacity, say, setAllMemory)
+import Screeps.Types (BodyPartType, Creep)
+import Util (ignore)
 
-ignore :: forall a. a -> Unit
-ignore _ = unit
+constructionPlans :: Array (Array BodyPartType)
+constructionPlans =
+  [ 
+  --   [ part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_work, part_work, part_work, part_work, part_work, part_work, part_work, part_work, part_work, part_work]  -- 2000 (34 extensions)
+  -- , [ part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_work, part_work, part_work, part_work, part_work, part_work, part_work, part_work, part_work]  -- 1800 (30 extensions)
+  -- , [ part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_work, part_work, part_work, part_work, part_work, part_work, part_work, part_work]  -- 1600 (26 extensions)
+  -- , [ part_move, part_move, part_move, part_move, part_move, part_move, part_move, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_work, part_work, part_work, part_work, part_work, part_work, part_work] -- 1400 (22 extensions)
+  -- , [ part_move, part_move, part_move, part_move, part_move, part_move, part_carry, part_carry, part_carry, part_carry, part_carry, part_carry, part_work, part_work, part_work, part_work, part_work, part_work] -- 1200 (18 extensions)
+  -- , [ part_move, part_move, part_move, part_move, part_move, part_carry, part_carry, part_carry, part_carry, part_carry, part_work, part_work, part_work, part_work, part_work] -- 1000 (14 extensions)
+  -- , [ part_move, part_move, part_move, part_move, part_carry, part_carry, part_carry, part_carry, part_work, part_work, part_work, part_work] -- 800 (10 extensions)
+  -- , [ part_move, part_move, part_move, part_carry, part_carry, part_carry, part_work, part_work, part_work] -- 600
+  [ part_move, part_move, part_move, part_carry, part_carry, part_work, part_work, part_work ] -- 550 (5 extensions)
+  , [ part_move, part_move, part_carry, part_carry, part_work, part_work, part_work ] -- 500
+  , [ part_move, part_move, part_carry, part_carry, part_carry, part_work, part_work ] -- 450
+  , [ part_move, part_move, part_carry, part_carry, part_work, part_work ] -- 400
+  , [ part_move, part_move, part_carry, part_work, part_work ] -- 350
+  , [ part_move, part_carry, part_work, part_work ] -- 300 (just the spawn)
+  ]
 
-ignoreM :: forall m a. Monad m => m a -> m Unit
-ignoreM m = m <#> ignore 
-
-type HarvesterMemory = { role :: Role, working :: Boolean }
+data Job = Delivering | Harvesting
+type HarvesterMemory = { role :: Role, job :: Job }
 type Harvester = { creep :: Creep, mem :: HarvesterMemory }
 
+instance encodeJobJson :: EncodeJson Job where
+  encodeJson Delivering = fromString "delivering"
+  encodeJson Harvesting = fromString "harvesting"
+
+instance decodeJobJson :: DecodeJson Job where
+  decodeJson json 
+    | Just "delivering" <- toString json = Right Delivering
+    | Just "harvesting" <- toString json = Right Harvesting
+    | otherwise = Left $ "Unable to recognize harvester job: " <> stringify json
+
 setMemory :: Harvester -> HarvesterMemory -> Effect Unit
-setMemory {creep} mem = setAllMemory creep mem 
+setMemory { creep } mem =  
+  setAllMemory creep mem
 
 runHarvester :: Harvester -> Effect Unit
-runHarvester harvester@{creep, mem} =
-  if mem.working
-  then
-    if amtCarrying creep resource_energy == 0
-    then do
-      setMemory harvester (mem { working = false })
-    else do
-      transport creep
-  else 
-    if amtCarrying creep resource_energy == carryCapacity creep
-    then do
-      setMemory harvester (mem { working = true }) 
-    else do
-      collectEnergy creep false
+runHarvester harvester@{ creep, mem } =
+
+  case mem.job of
+    Delivering -> 
+      if creep `amtCarrying` resource_energy == 0
+      then do
+        _ <- creep `say` "harvesting"
+        setMemory harvester (mem { job = Harvesting })
+      else do
+        result <- deliverToClosestStructure creep
+        if result then pure unit else do
+          result2 <- buildNextConstructionSite creep
+          if result2 then pure unit else do
+            result3 <- upgradeNearestController creep
+            if result3 then pure unit
+            else creep `say` "I'm stuck" <#> ignore
   
+    Harvesting ->
+      if creep `amtCarrying` resource_energy == carryCapacity creep
+      then do
+        _ <- creep `say` "delivering"
+        setMemory harvester (mem { job = Delivering })
+      else harvestEnergy creep <#> ignore
+          

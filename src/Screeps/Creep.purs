@@ -12,7 +12,7 @@ import Effect (Effect)
 import Screeps.FFI (runThisEffFn0, runThisEffFn1, runThisEffFn2, runThisEffFn3, runThisFn1, selectMaybes, toMaybe, unsafeGetFieldEff, unsafeField, unsafeSetFieldEff)
 import Screeps.Memory (fromJson, toJson)
 import Screeps.Room (PathOptions)
-import Screeps.Types (BodyPartType, ConstructionSite, Controller, Creep, Direction, Id, Mineral, Path, Resource, ResourceType, ReturnCode, Source, Structure, TargetPosition(..))
+import Screeps.Types (BodyPartType, ConstructionSite, Controller, Creep, Direction, Id, Mineral, Path, Resource, ResourceType, ReturnCode, Source, Structure, TargetPosition(..), Tombstone)
 
 foreign import data CreepCargo :: Type
 
@@ -204,6 +204,9 @@ upgradeController = runThisEffFn1 "upgradeController"
 
 withdraw :: forall a. Creep -> Structure a -> ResourceType -> Effect ReturnCode
 withdraw = runThisEffFn2 "withdraw"
+
+withdrawFromTombstone :: Creep -> Tombstone -> ResourceType -> Effect ReturnCode
+withdrawFromTombstone = runThisEffFn2 "withdraw"
 
 withdrawAmt :: forall a. Creep -> Structure a -> ResourceType -> Int -> Effect ReturnCode
 withdrawAmt = runThisEffFn3 "withdraw"

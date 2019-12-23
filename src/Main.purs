@@ -2,33 +2,34 @@ module Main (loop) where
 
 import Prelude
 
-import Construction (setupSpawn)
-import CreepClassification (UnknownCreepType(..), VocationalCreep(..), classifyCreep)
-import CreepSpawning (spawnCreepIfNeeded)
-import Data.Array (length)
-import Data.Either (Either(..))
-import Data.Foldable (for_)
-import Data.Maybe (Maybe(..))
+import CreepClassification (CreepMemory(..), UnknownCreepType(..), VocationalCreep(..), classifyCreep, spawnCreep)
+import CreepRoles (Role(..))
+import Data.Array (catMaybes, filter, fromFoldable, length, mapMaybe, zip)
+import Data.Array as Array
+import Data.Either (Either(..), hush)
+import Data.Foldable (for_, sum)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Traversable (for)
+import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Console (log)
 import Role.Builder (runBuilder)
-import Role.Claimer (runClaimer)
+import Role.Builder as Builder
 import Role.Guard (runGuard)
+import Role.Guard as Guard
 import Role.Harvester (runHarvester)
-import Role.Healer (runHealer)
-import Role.LDHarvester (runLDHarvester)
-import Role.Repairer (runRepairer)
+import Role.Harvester as Harvester
+import Role.Tower (runTower)
 import Role.Upgrader (runUpgrader)
-import Role.WallRepairer (runWallRepairer)
-import Role.Yeeter (runYeeter)
-import Role.Yoinker (runYoinker)
-import Screeps.Constants (find_hostile_creeps, find_my_structures)
-import Screeps.Defense (runTower)
+import Role.Upgrader as Upgrader
+import Screeps (find_hostile_creeps, find_my_structures, ok, part_move)
+import Screeps.Controller (level)
 import Screeps.Game (creeps, getGameGlobal, spawns)
-import Screeps.Room (find, find')
+import Screeps.Room (controller, energyAvailable, energyCapacityAvailable, find)
 import Screeps.RoomObject (room)
 import Screeps.Tower (toTower)
-import Screeps.Types (Creep, Structure)
+import Screeps.Types (BodyPartType, Creep, Spawn, Structure)
+import Util (bodyPartCost, (<<#>>))
 
 ignore :: forall a. a -> Unit
 ignore _ = unit
@@ -43,40 +44,116 @@ matchUnit :: Either UnknownCreepType VocationalCreep -> Effect Unit
 matchUnit (Right (Harvester creep)) = runHarvester creep
 matchUnit (Right (Upgrader creep)) = runUpgrader creep
 matchUnit (Right (Builder creep)) = runBuilder creep
-matchUnit (Right (LDHarvester creep)) = runLDHarvester creep
-matchUnit (Right (Repairer creep)) = runRepairer creep
-matchUnit (Right (WallRepairer creep)) = runWallRepairer creep
-matchUnit (Right (Healer creep)) = runHealer creep
 matchUnit (Right (Guard creep)) = runGuard creep
-matchUnit (Right (Yeeter creep)) = runYeeter creep
-matchUnit (Right (Yoinker creep)) = runYoinker creep
-matchUnit (Right (Claimer creep)) = runClaimer creep
 matchUnit (Left (UnknownCreepType err)) = log $ "One of the creeps has a memory I can't parse.\n" <> err
 
 runCreepRole :: Creep -> Effect Unit
-runCreepRole creep = classifyCreep creep >>= matchUnit  
-     
-   
-isTower :: forall a. Structure a -> Boolean
-isTower struct =
-  case toTower struct of
-    Nothing-> false
-    Just s -> true
+runCreepRole creep = classifyCreep creep >>= matchUnit
+
+shouldSpawnCreep :: { nCreeps :: Int, totalCapacity :: Int } -> Boolean
+shouldSpawnCreep { nCreeps, totalCapacity } = 
+  nCreeps < 8
+    
+
+constructionPlan :: Array (Array BodyPartType) -> Int -> Array BodyPartType
+constructionPlan plans budget =
+  let 
+    costs = plans <<#>> bodyPartCost <#> sum
+    maybePlan =
+      zip plans costs 
+      # Array.find (\(Tuple plan cost) -> cost <= budget)
+      <#> (\(Tuple plan _cost) -> plan) 
+  in fromMaybe [] maybePlan
+
+
+spawnNewCreeps :: Spawn -> Int -> Int -> Boolean -> Effect Unit
+spawnNewCreeps spawn budget controllerLevel anyHostiles = do
+  game <- getGameGlobal
+  creepsAndRolesObj <- for (creeps game) $ classifyCreep 
+
+  let 
+    creepsAndRoles = fromFoldable creepsAndRolesObj 
+    harvesters = creepsAndRoles # mapMaybe (case _ of 
+      (Right (Harvester h)) -> Just h
+      _ -> Nothing)
+    upgraders = creepsAndRoles # mapMaybe (case _ of 
+      (Right (Upgrader u)) -> Just u
+      _ -> Nothing)
+    builders = creepsAndRoles # mapMaybe (case _ of 
+      (Right (Builder b)) -> Just b
+      _ -> Nothing)
+
+    minHarvesters = 2
+    minBuilders = 2
+    minUpgraders = 1
+
+  if anyHostiles then spawnGuard
+  else if (length harvesters) < minHarvesters then spawnHarvester
+  else if (length builders) < minBuilders then spawnBuilder
+  else if (length upgraders) < minUpgraders then spawnUpgrader
+  else spawnHarvester
+
+  where
+    spawnGuard = do
+      let plan = constructionPlan Guard.constructionPlans budget
+      returnCode <- spawnCreep spawn plan noName { memory: GuardMemory {role: GuardRole}, dryRun: false }
+      if returnCode == ok then log $ "Spawned Guard " <> show plan
+      else log $ "couldn't create guard with plan: " <> show plan <> ". Error code: " <> show returnCode
+
+    spawnHarvester = do
+      let plan = constructionPlan Harvester.constructionPlans budget
+      returnCode <- spawnCreep spawn plan noName { memory: HarvesterMemory {role: HarvesterRole, job: Harvester.Harvesting}, dryRun: false }
+      if returnCode == ok then log $ "Spawned Harvester " <> show plan
+      else log $ "couldn't create harvester with plan: " <> show plan <> ". Error code: " <> show returnCode
+
+    spawnUpgrader = do
+      let plan = constructionPlan Upgrader.constructionPlans budget
+      returnCode <- spawnCreep spawn plan noName { memory: UpgraderMemory {role: UpgraderRole, job: Upgrader.Harvesting}, dryRun: false }
+      if returnCode == ok then log $ "Spawned Upgrader " <> show plan
+      else log $ "couldn't create upgrader with plan: " <> show plan <> ". Error code: " <> show returnCode
+
+    spawnBuilder = do
+      let plan = constructionPlan Builder.constructionPlans budget
+      returnCode <- spawnCreep spawn plan noName { memory: BuilderMemory {role: BuilderRole, job: Builder.Harvesting}, dryRun: false }
+      if returnCode == ok then log $ "Spawned Builder " <> show plan
+      else log $ "couldn't create builder with plan: " <> show plan <> ". Error code: " <> show returnCode
+                
 
 loop :: Effect Unit
 loop = do
-  
   game <- getGameGlobal
+  creepMemories <- for (creeps game # fromFoldable) classifyCreep
+  let 
+    nCreeps = 
+      creepMemories <#> hush # catMaybes 
+      # filter (case _ of 
+        Harvester _ -> true
+        Builder _ -> true
+        Upgrader _ -> true
+        _ -> false)
+      # length
+  
+  
   for_ (spawns game) \spawn -> do
-    do setupSpawn spawn
-    let 
-      towers = find' (room spawn) find_my_structures isTower
-      battleStations = length (find (room spawn) find_hostile_creeps) > 0 
+    dryRunReturnCode <- spawnCreep spawn [part_move] noName { memory: GuardMemory { role: GuardRole }, dryRun: true }
     
-    for_ (towers) \n -> do runTower n
-    spawnCreepIfNeeded spawn battleStations
+    let 
+      canSpawn = dryRunReturnCode == ok
+      anyHostiles = find (room spawn) find_hostile_creeps # length # (_ > 0)
+      totalCapacity = energyCapacityAvailable (room spawn)
+      shouldSpawn = shouldSpawnCreep { nCreeps, totalCapacity } || anyHostiles
+      controllerLevel = controller (room spawn) <#> level # fromMaybe 0
+      currentCapacity = energyAvailable (room spawn)
+      towers = find (room spawn) find_my_structures # mapMaybe (\(x :: forall a. Structure a) -> toTower x)
+
+    if energyAvailable (room spawn) == totalCapacity && shouldSpawn && canSpawn
+    then spawnNewCreeps spawn currentCapacity controllerLevel anyHostiles
+    else pure unit
+
+    for towers runTower
 
   for_ (creeps game) \n -> do
     runCreepRole n
-    
+
+  
 

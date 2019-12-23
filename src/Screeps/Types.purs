@@ -39,6 +39,7 @@ type Tower = OwnedStructure RawTower
 type Wall = OwnedStructure RawWall
 
 type Ruin = Structure RawRuin
+type Tombstone = RoomObject RawTombstone
 
 type ConstructionSite = RoomObject RawConstructionSite
 type Creep = RoomObject RawCreep
@@ -74,6 +75,7 @@ foreign import data RawTower :: Type
 foreign import data RawWall :: Type
 
 foreign import data RawRuin :: Type
+foreign import data RawTombstone :: Type
 
 foreign import data RawConstructionSite :: Type
 foreign import data RawCreep :: Type
@@ -82,6 +84,8 @@ foreign import data RawMineral :: Type
 foreign import data RawNuke :: Type
 foreign import data RawResource :: Type
 foreign import data RawSource :: Type
+
+foreign import data Store :: Type
 
 type Path = Array PathStep -- or String?
 

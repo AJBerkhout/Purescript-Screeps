@@ -46,16 +46,16 @@ foreign import createCreepImpl ::
   (String -> Either ReturnCode String) ->
   Effect (Either ReturnCode String)
 foreign import createCreepPrimeImpl :: 
-  Spawn -> Array BodyPartType -> String -> { memory :: Json } -> Effect ReturnCode
+  Spawn -> Array BodyPartType -> String -> { memory :: Json, dryRun :: Boolean } -> Effect ReturnCode
 
 createCreep :: Spawn -> Array BodyPartType -> Effect (Either ReturnCode String)
 createCreep spawn parts = createCreepImpl spawn parts Left Right
 
 createCreep' :: 
   forall mem. (EncodeJson mem) =>
-  Spawn -> Array BodyPartType -> Maybe String -> { memory :: mem} -> Effect ReturnCode
-createCreep' spawn parts name' { memory: memry } = 
-  createCreepPrimeImpl spawn parts (fromMaybe "" name') { memory: encodeJson memry }
+  Spawn -> Array BodyPartType -> Maybe String -> { memory :: mem, dryRun :: Boolean } -> Effect ReturnCode
+createCreep' spawn parts name' { memory: memry, dryRun } = 
+  createCreepPrimeImpl spawn parts (fromMaybe "" name') { memory: encodeJson memry, dryRun }
 
 recycleCreep :: Spawn -> Creep -> Effect ReturnCode
 recycleCreep = runThisEffFn1 "recycleCreep"
