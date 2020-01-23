@@ -1,4 +1,4 @@
-# Screeps-Testing
+# Purescript-Screeps
 
 To run the code, clone the repo. Run spago bundle-app in the root directory. This will generate an index.js file.
 
