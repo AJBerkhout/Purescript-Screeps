@@ -35,5 +35,5 @@ runHarvester harvester@{creep, mem} =
     then do
       setMemory harvester (mem { working = true }) 
     else do
-      collectEnergy creep false
+      collectEnergy creep true
   

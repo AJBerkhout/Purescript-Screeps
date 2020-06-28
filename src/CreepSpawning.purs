@@ -27,7 +27,7 @@ ignoreM m = m <#> ignore
 spawnCreepIfNeeded :: Spawn -> Boolean -> Effect Unit
 spawnCreepIfNeeded spawn battleStations =
   let 
-    minHarvesters = 0
+    minHarvesters = 2
     minUpgraders = 2
     minBuilders = 2
     minRepairers = 1

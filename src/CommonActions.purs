@@ -72,7 +72,7 @@ collectEnergy creep useContainers = do
       then creep `moveTo` (TargetObj ruin) # ignoreM
       else pure unit
     Nothing -> do
-      closestSource <- findClosestByPath' (pos creep) (OfType find_sources_active) (closestPathOpts)
+      closestSource <- findClosestByPath (pos creep) (OfType find_sources_active) 
       case closestSource of
         Just targetSource -> do
           harvestResult <- harvestSource creep targetSource
